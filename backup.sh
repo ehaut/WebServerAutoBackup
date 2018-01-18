@@ -56,9 +56,9 @@ SAVE_DIR="/home/backup/save"
 SAVE_LOG_DIR="/home/backup/log"
 
 #------------------------------------------------------------------
-#TEMP_DIR="/temp/backup"
+#TEMP_DIR="/tmp/backup"
 #------------------------------------------------------------------
-TEMP_DIR="/temp/backup"
+TEMP_DIR="/tmp/backup"
 
 ##############  Don't edit the following section!!!  ##############
 ###################################################################
@@ -74,6 +74,7 @@ printf "
 # Please add your server info in this script config  #
 # and run as root.                                   #
 ######################################################
+It needs some time.So please wait.
 "
 # Check if user is root
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must be root to run this script${CEND}"; exit 1; }
@@ -89,38 +90,51 @@ else
 	echo "${CFAILURE}Error: You must set the save directory${CEND}" 
 	exit 1
 fi
+# Check if the log file exists
+log_name="$(date +"%Y%m%d").backup.log"
+if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
+	touch "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." >> "${SAVE_LOG_DIR}/${log_name}"
+	exit 1
+fi
 # Check if mysqldump command exists
 if ! [ -x "$(command -v mysqldump)" ]; then
-	echo "${CFAILURE}Error: You may not install mysql server${CEND}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install mysql server.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
 if [[ "${WWWROOT_DIR}" = "" ]]; then 
-	echo "${CFAILURE}Error: You must set the wwwroot directory${CEND}" 
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the wwwroot directory.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if temp folder exists
 if [[ "${TEMP_DIR}" = "" ]]; then 
-	echo "${CFAILURE}Error: You must set the temp directory${CEND}" 
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the temp directory.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 if ! [ -d "${TEMP_DIR}"  ]; then 
-		mkdir -p "${TEMP_DIR}" 
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder does not exist,create it." >> "${SAVE_LOG_DIR}/${log_name}"
+	mkdir -p "${TEMP_DIR}" 
 fi 
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
 cd ${TEMP_DIR}
 rm -rf ${TEMP_DIR}/*
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." >> "${SAVE_LOG_DIR}/${log_name}"
 for db_name in ${MYSQL_DBS}
 do
-	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql"
+	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" >> "${SAVE_LOG_DIR}/${log_name}"
 done
 # Start backup wwwroot
 cp -r ${WWWROOT_DIR} .
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." >> "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 # All clear
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
-# Start clean backup files more than three days
+# Start clean backup and logs files more than three days
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files more than three days." >> "${SAVE_LOG_DIR}/${log_name}"
 find ${SAVE_DIR} -mtime +3 -name "*.tar.gz" -exec rm -Rf {} \;
-echo "Finish.Thanks for your using."
+find ${SAVE_LOG_DIR} -mtime +3 -name "*.log" -exec rm -Rf {} \;
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finish.Thanks for your using." >> "${SAVE_LOG_DIR}/${log_name}"
