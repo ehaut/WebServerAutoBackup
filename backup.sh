@@ -23,17 +23,17 @@ WWWROOT_DIR="/home/wwwroot"
 #------------------------------------------------------------------
 #MYSQL_DBS="dbname"
 #------------------------------------------------------------------
-MYSQL_DBS="TEST"
+MYSQL_DBS=""
 
 #------------------------------------------------------------------
 #MYSQL_USER="root"
 #------------------------------------------------------------------
-MYSQL_USER="root"
+MYSQL_USER=""
 
 #------------------------------------------------------------------
 #MYSQL_PASSWD="123456"
 #------------------------------------------------------------------
-MYSQL_PASSWD="123456"
+MYSQL_PASSWD=""
 
 #------------------------------------------------------------------
 #MYSQL_SERVER="127.0.0.1"
@@ -54,6 +54,11 @@ SAVE_DIR="/home/backup/save"
 #SAVE_LOG_DIR="/home/backup/log"
 #------------------------------------------------------------------
 SAVE_LOG_DIR="/home/backup/log"
+
+#------------------------------------------------------------------
+#TEMP_DIR="/temp/backup"
+#------------------------------------------------------------------
+TEMP_DIR="/temp/backup"
 
 ##############  Don't edit the following section!!!  ##############
 ###################################################################
@@ -94,16 +99,28 @@ if [[ "${WWWROOT_DIR}" = "" ]]; then
 	echo "${CFAILURE}Error: You must set the wwwroot directory${CEND}" 
 	exit 1
 fi
+# Check if temp folder exists
+if [[ "${TEMP_DIR}" = "" ]]; then 
+	echo "${CFAILURE}Error: You must set the temp directory${CEND}" 
+	exit 1
+fi
+if ! [ -d "${TEMP_DIR}"  ]; then 
+		mkdir -p "${TEMP_DIR}" 
+fi 
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
+cd ${TEMP_DIR}
+rm -rf ${TEMP_DIR}/*
 for db_name in ${MYSQL_DBS}
 do
-	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${SAVE_DIR}/$db_name.sql"
+	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql"
 done
 # Start backup wwwroot
-	tar -czPf"${SAVE_DIR}/backup.$NOW.tar.gz" "${SAVE_DIR}/*.sql" ${WWWROOT_DIR}
+cp -r ${WWWROOT_DIR} .
+tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 # All clear
-	rm -rf "${SAVE_DIR}/*.sql"
+rm -rf ${TEMP_DIR}/*
 # Start clean backup files more than three days
-	find ${SAVE_DIR} -mtime +3 -name "*.tar.gz" -exec rm -Rf {} \;
+find ${SAVE_DIR} -mtime +3 -name "*.tar.gz" -exec rm -Rf {} \;
+echo "Finish.Thanks for your using."
