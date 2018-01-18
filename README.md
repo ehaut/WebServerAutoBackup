@@ -24,6 +24,7 @@ WEB 服务器自动备份脚本 （Shell）
     
     crontab -e
     0 2 * * * /root/WebServerAutoBackup/backup.sh > /data/backup/log/backup-cron.log  2>&1 &
+    //请自行修改脚本文件和输出日志文件的目录
 
 
 
