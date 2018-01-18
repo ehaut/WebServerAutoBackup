@@ -20,7 +20,10 @@ WEB 服务器自动备份脚本 （Shell）
     chmod 777 backup.sh
     ./backup.sh
 
-
+添加计划任务，每天凌晨两点自动备份
+    
+    crontab -e
+    0 2 * * * /root/WebServerAutoBackup/backup.sh > /data/backup/log/backup-cron.log  2>&1 &
 
 
 
