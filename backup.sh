@@ -1,7 +1,7 @@
 #!/bin/bash
 #-----------------------------
 source /etc/profile
-source ~/.bash_profile
+export TERM=${TERM:-dumb}
 #-----------------------------			  
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
