@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #-----------------------------
 source /etc/profile
 source ~/.bash_profile
@@ -127,7 +127,7 @@ rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." >> "${SAVE_LOG_DIR}/${log_name}"
 for db_name in ${MYSQL_DBS}
 do
-	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" >> "${SAVE_LOG_DIR}/${log_name}"
+	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
 done
 # Start backup wwwroot
 cp -r ${WWWROOT_DIR} .
