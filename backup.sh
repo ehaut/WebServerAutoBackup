@@ -3,7 +3,8 @@
 source /etc/profile
 source ~/.bash_profile
 #-----------------------------			  
-# Author:Noisky <i@ffis.me> && CHN-STUDENT <chn-student@outlook.com>
+# WebServerAutoBackup Script		  
+# Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
 # Test by CentOS6&7
 # Do not edit the other parts of the configuration file.
@@ -70,14 +71,14 @@ TEMP_DIR="/tmp/backup"
 clear
 printf "
 ######################################################
-#            WebServerAutoBackup Script              # 
-#                                                    #                       
+#            WebServerAutoBackup Script              #
+#                2018.1  V0.0.1 Beta                 #
+#                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
 #                                                    #
-#                2018.1  V0.0.1 Beta                 #
-#               Noisky && CHN-STUDENT                #
-######################################################
+#         Designed by CHN-STUDENT && Noisky          #
+###################################################### 
 It may take some time,please wait...
 "
 # Check if user is root
