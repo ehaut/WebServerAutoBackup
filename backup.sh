@@ -1,14 +1,17 @@
-#!/bin/bash
+#!/bin/sh
+#-----------------------------
+source /etc/profile
+source ~/.bash_profile
+#-----------------------------			  
 # Author:Noisky <i@ffis.me> && CHN-STUDENT <chn-student@outlook.com>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
-# Test by CentOS7
+# Test by CentOS6&7
 # Do not edit the other parts of the configuration file.
 
 ###################################################################
 ####################  Your Server Info Config  ####################
-
 #------------------------------------------------------------------
-#Tip:You can edit like this:
+#Tip: You can edit it like this:
 #------------------------------------------------------------------
 #Attribute:"value"
 #------------------------------------------------------------------
@@ -67,17 +70,18 @@ TEMP_DIR="/tmp/backup"
 clear
 printf "
 ######################################################
-# WebServerAutoBackup Script                         #          
-# Author:Noisky && CHN-STUDENT                       #                 
-# Date:2018.1                                        #       
-# Version:V0.0.1 Beta                                #              
-# Please add your server info in this script config  #
-# and run as root.                                   #
+#            WebServerAutoBackup Script              # 
+#                                                    #                       
+# Please add your server information in this script  #
+#           configuration and run as root            #
+#                                                    #
+#                2018.1  V0.0.1 Beta                 #
+#               Noisky && CHN-STUDENT                #
 ######################################################
-It needs some time.So please wait.
+It may take some time,please wait...
 "
 # Check if user is root
-[ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must be root to run this script${CEND}"; exit 1; }
+[ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must run this script as root.${CEND}"; exit 1; }
 # Check if the save folder exists
 if  [[ "${SAVE_LOG_DIR}" != "" && "${SAVE_DIR}" != "" ]];then
 	if ! [ -d "${SAVE_DIR}"  ]; then 
@@ -87,7 +91,7 @@ if  [[ "${SAVE_LOG_DIR}" != "" && "${SAVE_DIR}" != "" ]];then
 		mkdir -p "${SAVE_LOG_DIR}" 
 	fi 
 else
-	echo "${CFAILURE}Error: You must set the save directory${CEND}" 
+	echo "${CFAILURE}Error: You must set the save directory.${CEND}" 
 	exit 1
 fi
 # Check if the log file exists
@@ -95,11 +99,10 @@ log_name="$(date +"%Y%m%d").backup.log"
 if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	touch "${SAVE_LOG_DIR}/${log_name}"
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." >> "${SAVE_LOG_DIR}/${log_name}"
-	exit 1
 fi
 # Check if mysqldump command exists
 if ! [ -x "$(command -v mysqldump)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install mysql server.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
@@ -134,7 +137,9 @@ tar -czf${SAVE_DIR}/backup.$NOW.tar.gz *
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
 # Start clean backup and logs files more than three days
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files more than three days." >> "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clearing up more than three days of backup and log files." >> "${SAVE_LOG_DIR}/${log_name}"
 find ${SAVE_DIR} -mtime +3 -name "*.tar.gz" -exec rm -Rf {} \;
 find ${SAVE_LOG_DIR} -mtime +3 -name "*.log" -exec rm -Rf {} \;
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finish.Thanks for your using." >> "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." >> "${SAVE_LOG_DIR}/${log_name}"
+printf "Backup successful.
+"
