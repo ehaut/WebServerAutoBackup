@@ -7,72 +7,15 @@ export TERM=${TERM:-dumb}
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
 # Test by CentOS6&7
-# Do not edit the other parts of the configuration file.
-
-###################################################################
-####################  Your Server Info Config  ####################
-#------------------------------------------------------------------
-#Tip: You can edit it like this:
-#------------------------------------------------------------------
-#Attribute:"value"
-#------------------------------------------------------------------
-#e.g: WWWROOT_DIR="/home/wwwroot"
-#------------------------------------------------------------------
-
-#------------------------------------------------------------------
-#WWWROOT="/home/wwwroot"
-#------------------------------------------------------------------
-WWWROOT_DIR="/home/wwwroot"
-
-#------------------------------------------------------------------
-#MYSQL_DBS="dbname"
-#------------------------------------------------------------------
-MYSQL_DBS=""
-
-#------------------------------------------------------------------
-#MYSQL_USER="root"
-#------------------------------------------------------------------
-MYSQL_USER=""
-
-#------------------------------------------------------------------
-#MYSQL_PASSWD="123456"
-#------------------------------------------------------------------
-MYSQL_PASSWD=""
-
-#------------------------------------------------------------------
-#MYSQL_SERVER="127.0.0.1"
-#------------------------------------------------------------------
-MYSQL_SERVER="127.0.0.1"
-
-#------------------------------------------------------------------
-#MYSQL_SERVER_PORT="3306"
-#------------------------------------------------------------------
-MYSQL_SERVER_PORT="3306"
-
-#------------------------------------------------------------------
-#SAVE_DIR="/home/backup/save"
-#------------------------------------------------------------------
-SAVE_DIR="/home/backup/save"
-
-#------------------------------------------------------------------
-#SAVE_LOG_DIR="/home/backup/log"
-#------------------------------------------------------------------
-SAVE_LOG_DIR="/home/backup/log"
-
-#------------------------------------------------------------------
-#TEMP_DIR="/tmp/backup"
-#------------------------------------------------------------------
-TEMP_DIR="/tmp/backup"
-
-##############  Don't edit the following section!!!  ##############
-###################################################################
+# Do not edit this script.
+#-----------------------------
 
 #Print welcome info
 clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.1 Beta                 #
+#                2018.1  V0.0.2 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -83,7 +26,13 @@ It may take some time,please wait...
 "
 # Check if user is root
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must run this script as root.${CEND}"; exit 1; }
+# Set test file
+INI_FILE="${1:-config.ini}"
+# Set bash ini parser
+source ./bash-ini-parser
+cfg_parser "${INI_FILE}"
 # Check if the save folder exists
+cfg_section_SAVE_CONFIG
 if  [[ "${SAVE_LOG_DIR}" != "" && "${SAVE_DIR}" != "" ]];then
 	if ! [ -d "${SAVE_DIR}"  ]; then 
 		mkdir -p "${SAVE_DIR}" 
@@ -107,11 +56,13 @@ if ! [ -x "$(command -v mysqldump)" ]; then
 	exit 1
 fi
 # Check if wwwroot folder exists
+cfg_section_WWWROOT_CONFIG
 if [[ "${WWWROOT_DIR}" = "" ]]; then 
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the wwwroot directory.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if temp folder exists
+cfg_section_TEMP_CONFIG
 if [[ "${TEMP_DIR}" = "" ]]; then 
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the temp directory.Exit.${CEND}" >> "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
@@ -123,6 +74,7 @@ fi
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
+cfg_section_MYSQL_CONFIG
 cd ${TEMP_DIR}
 rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." >> "${SAVE_LOG_DIR}/${log_name}"
