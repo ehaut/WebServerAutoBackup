@@ -201,12 +201,15 @@ cfg_section_MYSQL_CONFIG
 cd ${TEMP_DIR}
 rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." >> "${SAVE_LOG_DIR}/${log_name}"
-for db_name in ${MYSQL_DBS}
+for db_name in ${MYSQL_DBS[@]}
 do
 	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
 done
 # Start backup wwwroot
-cp -r ${WWWROOT_DIR} .
+for www_dir in ${WWWROOT_DIR[@]}
+do
+	cp -r ${www_dir} .
+done
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." >> "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 # All clear
