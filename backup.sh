@@ -215,10 +215,14 @@ tar -czf${SAVE_DIR}/backup.$NOW.tar.gz *
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
-# Start clean backup and logs files more than three days
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clearing up more than three days of backup and log files." >> "${SAVE_LOG_DIR}/${log_name}"
-find ${SAVE_DIR} -mtime +3 -name "*.tar.gz" -exec rm -Rf {} \;
-find ${SAVE_LOG_DIR} -mtime +3 -name "*.log" -exec rm -Rf {} \;
+# Start clean backup and logs files based your set
+cfg_section_DAY_CONFIG
+if [ "${DAY}" != "0" ];then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files based your set." >> "${SAVE_LOG_DIR}/${log_name}"
+	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
+	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
+fi
+# Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." >> "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
