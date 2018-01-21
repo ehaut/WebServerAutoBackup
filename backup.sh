@@ -6,7 +6,7 @@ export TERM=${TERM:-dumb}
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
-# Test by CentOS6&7
+# Test by CentOS6&7 X64
 # Do not edit this script.
 #-----------------------------
 
@@ -15,7 +15,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.2 Beta                 #
+#                2018.1  V0.0.3 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -26,6 +26,8 @@ It may take some time,please wait...
 "
 # Check if user is root
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must run this script as root.${CEND}"; exit 1; }
+# Get base path
+basepath=$(cd `dirname $0`; pwd)
 # Set ini file
 INI_FILE="${1:-config.ini}"
 # Set bash ini parser
@@ -212,17 +214,47 @@ do
 done
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." >> "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
-# All clear
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
-rm -rf ${TEMP_DIR}/*
 # Start clean backup and logs files based your set
 cfg_section_DAY_CONFIG
 if [ "${DAY}" != "0" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files based your set." >> "${SAVE_LOG_DIR}/${log_name}"
+	# Create delete list for qshell
+#	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" >> ${TEMP_DIR}/delete_bak.txt;
+#	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" >> ${TEMP_DIR}/delete_log.txt;
+	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 fi
+# If you set auto upload to your qiniu bucket,then do. 
+cfg_section_QSHELL_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check if qshell exists
+	qshell_path="${basepath}/qshell"
+	if [ "${qshell_path}" = "" ];then 
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find qshell." >> "${SAVE_LOG_DIR}/${log_name}"
+		exit 1
+	fi
+	# Give its permission
+	if ! [ -x ${qshell_path} ];then
+		chmod a+x ${qshell_path}
+	fi
+	# Set qshell account
+	${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." >> "${SAVE_LOG_DIR}/${log_name}"
+	# Start upload to qiniu bucket by qshell
+	${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/"
+	${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/"
+	# If you set auto delete from your qiniu bucket,then do. 
+#	if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+#		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_bak.txt
+#		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_log.txt
+#	fi
+fi
+# All clear
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
+rm -rf ${TEMP_DIR}/*
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." >> "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
+
