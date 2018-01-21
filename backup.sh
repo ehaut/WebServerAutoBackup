@@ -1,5 +1,5 @@
 #!/bin/bash
-#-----------------------------
+#Read the environment configuration
 source /etc/profile
 export TERM=${TERM:-dumb}
 #-----------------------------			  
@@ -26,10 +26,133 @@ It may take some time,please wait...
 "
 # Check if user is root
 [ $(id -u) != "0" ] && { echo "${CFAILURE}Error: You must run this script as root.${CEND}"; exit 1; }
-# Set test file
+# Set ini file
 INI_FILE="${1:-config.ini}"
 # Set bash ini parser
-source ./bash-ini-parser
+# The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
+PREFIX="cfg_section_"
+
+function debug {
+   return #abort debug
+   echo $*
+   echo --start--
+   echo "${ini[*]}"
+   echo --end--
+   echo
+}
+
+function cfg_parser {
+   shopt -p extglob &> /dev/null
+   CHANGE_EXTGLOB=$?
+   if [ $CHANGE_EXTGLOB = 1 ]
+   then
+      shopt -s extglob
+   fi
+   ini="$(<$1)"                 # read the file
+   ini=${ini//$'\r'/}           # remove linefeed i.e dos2unix
+   ini="${ini//[/\\[}"          # escape [
+   debug
+   ini="${ini//]/\\]}"          # escape ]
+   debug
+   IFS=$'\n' && ini=( ${ini} )  # convert to line-array
+   debug
+   ini=( ${ini[*]//;*/} )       # remove comments with ;
+   debug
+   ini=( ${ini[*]//\#*/} )       # remove comments with #
+   debug
+   ini=( ${ini[*]/#+([[:space:]])/} ) # remove init whitespace
+   debug "whitespace around"
+   ini=( ${ini[*]/*([[:space:]])=*([[:space:]])/=} ) # remove whitespace around =
+   debug
+   ini=( ${ini[*]/#\\[/\}$'\n'"$PREFIX"} ) # set section prefix
+   debug
+   ini=( ${ini[*]/%\\]/ \(} )   # convert text2function (1)
+   debug
+   ini=( ${ini[*]/=/=\( } )     # convert item to array
+   debug
+   ini=( ${ini[*]/%/ \)} )      # close array parenthesis
+   debug
+   ini=( ${ini[*]/%\\ \)/ \\} ) # the multiline trick
+   debug
+   ini=( ${ini[*]/%\( \)/\(\) \{} ) # convert text2function (2)
+   debug
+   ini=( ${ini[*]/%\} \)/\}} )  # remove extra parenthesis
+   ini=( ${ini[*]/%\{/\{$'\n''cfg_unset ${FUNCNAME/#'$PREFIX'}'$'\n'} )  # clean previous definition of section 
+   debug
+   ini[0]=""                    # remove first element
+   debug
+   ini[${#ini[*]} + 1]='}'      # add the last brace
+   debug
+   eval "$(echo "${ini[*]}")"   # eval the result
+   EVAL_STATUS=$?
+   if [ $CHANGE_EXTGLOB = 1 ]
+   then
+      shopt -u extglob
+   fi
+   return $EVAL_STATUS
+}
+
+function cfg_clear {
+   SECTION=$1
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   if [ -z "$SECTION" ] 
+   then
+      fun="$(declare -F)"
+   else
+      fun="$(declare -F $PREFIX$SECTION)"
+      if [ -z "$fun" ]
+      then
+         echo "section $SECTION not found" >2
+         exit 1
+      fi
+   fi
+   fun="${fun//declare -f/}"
+   for f in $fun; do
+      [ "${f#$PREFIX}" == "${f}" ] && continue
+      unset -f ${f}
+   done
+   IFS="$OLDIFS"
+}
+
+function cfg_unset {
+   SECTION=$1
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   if [ -z "$SECTION" ] 
+   then
+      fun="$(declare -F)"
+   else
+      fun="$(declare -F $PREFIX$SECTION)"
+      if [ -z "$fun" ]
+      then
+         echo "section $SECTION not found" >2
+         return
+      fi
+   fi
+   fun="${fun//declare -f/}"
+   for f in $fun; do
+      [ "${f#$PREFIX}" == "${f}" ] && continue
+      item="$(declare -f ${f})"
+      item="${item##*\{}" # remove function definition
+      item="${item##*FUNCNAME*$PREFIX\};}" # remove clear section
+      item="${item/\}}"  # remove function close
+      item="${item%)*}" # remove everything after parenthesis
+      item="${item});" # add close parenthesis
+      vars=""
+      while [ "$item" != "" ]
+      do
+         newvar="${item%%=*}" # get item name
+         vars="$vars $newvar" # add name to collection
+         item="${item#*;}" # remove readed line
+      done
+      for var in $vars; do
+         unset $var
+      done
+   done
+   IFS="$OLDIFS"
+}
+
 cfg_parser "${INI_FILE}"
 # Check if the save folder exists
 cfg_section_SAVE_CONFIG

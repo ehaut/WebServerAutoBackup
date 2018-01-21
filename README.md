@@ -18,7 +18,7 @@ WEB 服务器自动备份脚本 （Shell）
     git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git
     cd WebServerAutoBackup
     vi config.ini //修改配置文件内的网站、数据库等参数
-    chmod +x backup.sh
+    chmod a+x backup.sh
     ./backup.sh
 
 添加计划任务，每天凌晨两点自动备份
