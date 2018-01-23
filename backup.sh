@@ -233,8 +233,16 @@ cfg_section_DAY_CONFIG
 if [ "${DAY}" != "0" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files based your set." >> "${SAVE_LOG_DIR}/${log_name}"
 	# Create delete list for qshell
-#	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" >> ${TEMP_DIR}/delete_bak.txt;
-#	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" >> ${TEMP_DIR}/delete_log.txt;
+		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz"`
+		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
+		for files_name in ${files_list}
+		do
+			echo "${key_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/delete_bak.txt
+		done
+		for logs_name in ${logs_list}
+		do
+			echo "${key_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/delete_log.txt
+		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
@@ -262,10 +270,10 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/" -file-list="${TEMP_DIR}/file_cache.txt"
 	${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/" -file-list="${TEMP_DIR}/log_cache.txt"
 	# If you set auto delete from your qiniu bucket,then do. 
-#	if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-#		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_bak.txt
-#		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_log.txt
-#	fi
+	if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_bak.txt
+		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_log.txt
+	fi
 fi
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." >> "${SAVE_LOG_DIR}/${log_name}"
