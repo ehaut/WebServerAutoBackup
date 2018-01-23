@@ -13,6 +13,8 @@ WEB 服务器自动备份脚本 （Shell）
 将来会实现的功能：
  - 自动将备份文件上传到百度云、七牛云等
 
+程序打包下载地址：https://github.com/CHN-STUDENT/WebServerAutoBackup/archive/master.zip
+
 程序使用方法：
 
     git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
