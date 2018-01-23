@@ -32,10 +32,15 @@ basepath=$(cd `dirname $0`; pwd)
 INI_FILE="${1:-config.ini}"
 # Set bash ini parser
 # The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
+# Latest update:2018.1.23 
 PREFIX="cfg_section_"
 
 function debug {
-   return #abort debug
+   if  ! [ -v "BASH_INI_PARSER_DEBUG" ]
+   then 
+      #abort debug
+      return
+   fi
    echo $*
    echo --start--
    echo "${ini[*]}"
@@ -52,18 +57,21 @@ function cfg_parser {
    fi
    ini="$(<$1)"                 # read the file
    ini=${ini//$'\r'/}           # remove linefeed i.e dos2unix
-   ini="${ini//[/\\[}"          # escape [
-   debug
-   ini="${ini//]/\\]}"          # escape ]
-   debug
+
+   ini="${ini//[/\\[}"
+   debug "escaped ["
+   ini="${ini//]/\\]}"
+   debug "escaped ]"
    IFS=$'\n' && ini=( ${ini} )  # convert to line-array
    debug
-   ini=( ${ini[*]//;*/} )       # remove comments with ;
-   debug
-   ini=( ${ini[*]//\#*/} )       # remove comments with #
-   debug
+   ini=( ${ini[*]/#*([[:space:]]);*/} )
+   debug "remove ; comments"
+   ini=( ${ini[*]/#*([[:space:]])\#*/} )
+   debug "remove # comments"
    ini=( ${ini[*]/#+([[:space:]])/} ) # remove init whitespace
-   debug "whitespace around"
+   debug
+   ini=( ${ini[*]/%+([[:space:]])/} ) # remove ending whitespace
+   debug "whitespace around ="
    ini=( ${ini[*]/*([[:space:]])=*([[:space:]])/=} ) # remove whitespace around =
    debug
    ini=( ${ini[*]/#\\[/\}$'\n'"$PREFIX"} ) # set section prefix
@@ -94,7 +102,6 @@ function cfg_parser {
    return $EVAL_STATUS
 }
 
-function cfg_clear {
    SECTION=$1
    OLDIFS="$IFS"
    IFS=' '$'\n'
@@ -112,11 +119,34 @@ function cfg_clear {
    fun="${fun//declare -f/}"
    for f in $fun; do
       [ "${f#$PREFIX}" == "${f}" ] && continue
-      unset -f ${f}
+      item="$(declare -f ${f})"
+      item="${item##*\{}" # remove function definition
+      item="${item##*FUNCNAME*$PREFIX\};}" # remove clear section
+      item="${item/\}}"  # remove function close
+      item="${item%)*}" # remove everything after parenthesis
+      item="${item});" # add close parenthesis
+      vars=""
+      while [ "$item" != "" ]
+      do
+         newvar="${item%%=*}" # get item name
+         vars="$vars $newvar" # add name to collection
+         item="${item#*;}" # remove readed line
+      done
+      eval $f
+      echo "[${f#$PREFIX}]" # output section
+      for var in $vars; do
+         eval 'local length=${#'$var'[*]}' # test if var is an array
+         if [ $length == 1 ]
+         then
+            echo $var=\"${!var}\" #output var
+         else 
+            echo ";$var is an array" # add comment denoting var is an array
+            eval 'echo $var=\"${'$var'[*]}\"' # output array var
+         fi
+      done
    done
    IFS="$OLDIFS"
 }
-
 function cfg_unset {
    SECTION=$1
    OLDIFS="$IFS"
@@ -154,6 +184,57 @@ function cfg_unset {
    done
    IFS="$OLDIFS"
 }
+
+function cfg_clear {
+   SECTION=$1
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   if [ -z "$SECTION" ] 
+   then
+      fun="$(declare -F)"
+   else
+      fun="$(declare -F $PREFIX$SECTION)"
+      if [ -z "$fun" ]
+      then
+         echo "section $SECTION not found" >2
+         exit 1
+      fi
+   fi
+   fun="${fun//declare -f/}"
+   for f in $fun; do
+      [ "${f#$PREFIX}" == "${f}" ] && continue
+      unset -f ${f}
+   done
+   IFS="$OLDIFS"
+}
+
+   SECTION=$1
+   VAR=$2
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   fun="$(declare -F $PREFIX$SECTION)"
+   if [ -z "$fun" ]
+   then
+      echo "section $SECTION not found" >2
+      exit 1
+   fi
+   fun="${fun//declare -f/}"
+   item="$(declare -f ${fun})"
+   #item="${item##* $VAR=*}" # remove var declaration
+   item="${item/\}}"  # remove function close
+   item="${item}
+    $VAR=(${!VAR})
+   "
+   item="${item}
+   }" # close function again
+
+   eval "function $item"
+}
+#Test harness
+if [ $# != 0 ]
+then
+   $@
+fi
 
 cfg_parser "${INI_FILE}"
 # Check if the save folder exists
