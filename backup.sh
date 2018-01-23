@@ -255,9 +255,12 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Set qshell account
 	${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." >> "${SAVE_LOG_DIR}/${log_name}"
+	# Update the files list cache 
+	${qshell_path} dircache ${SAVE_DIR} "${TEMP_DIR}/file_cache.txt"
+	${qshell_path} dircache ${SAVE_LOG_DIR} "${TEMP_DIR}/log_cache.txt"
 	# Start upload to qiniu bucket by qshell
-	${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/"
-	${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/"
+	${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/" -file-list="${TEMP_DIR}/file_cache.txt"
+	${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/" -file-list="${TEMP_DIR}/log_cache.txt"
 	# If you set auto delete from your qiniu bucket,then do. 
 #	if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 #		${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/delete_bak.txt
