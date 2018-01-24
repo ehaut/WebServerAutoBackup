@@ -32,15 +32,15 @@ basepath=$(cd `dirname $0`; pwd)
 INI_FILE="${1:-config.ini}"
 # Set bash ini parser
 # The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
-# Latest update:2018.1.23 
+# Latest update:2018.1.24
 PREFIX="cfg_section_"
 
 function debug {
-   if  ! [ -v "BASH_INI_PARSER_DEBUG" ]
-   then 
+#   if  ! [ -v "BASH_INI_PARSER_DEBUG" ]
+#   then 
       #abort debug
       return
-   fi
+#   fi
    echo $*
    echo --start--
    echo "${ini[*]}"
