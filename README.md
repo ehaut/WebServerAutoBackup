@@ -2,8 +2,8 @@
 
 This is a script that automatically backs up your site and database to local or to Qiniu (which will be implemented in the future)
 
-WEB 服务器自动备份脚本 （Shell）
-<small>仅在CentOS 6 x64 && CentOS 7 x64 测试通过</small>
+WEB 服务器自动备份脚本 （Shell）  
+仅在CentOS 6 x64 && CentOS 7 x64 测试通过
 
 已实现功能：
  - 自动备份网站和数据库到本地
@@ -17,8 +17,8 @@ WEB 服务器自动备份脚本 （Shell）
  - 自动判断机器类型，下载相应的云上传工具
  - 兼容更多的linux发行版
  
-原理：
-  通过mysqldump导出数据库，tar压缩备份，调用七牛官方qshell上传。
+原理：  
+通过mysqldump导出数据库，tar压缩备份，调用七牛官方qshell上传。
 
 不足：
  - 由于tar绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除。
@@ -47,7 +47,7 @@ WEB 服务器自动备份脚本 （Shell）
     //请自行修改脚本文件目录和输出日志文件目录
 
 ### Thanks：
-ini解析引擎-bash-ini-parser
+ini解析引擎-bash-ini-parser  
 Github：https://github.com/albfan/bash-ini-parser
 
 
