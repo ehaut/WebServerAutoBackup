@@ -228,7 +228,7 @@ else
 		do
 			mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
 		done
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
 # Start backup wwwroot
@@ -238,7 +238,7 @@ do
 done
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
@@ -247,7 +247,7 @@ if [ "${DAY}" = "" ];then
 	exit 1
 fi
 if [ "${DAY}" != "0" ];then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clean backup and logs files based your set." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
 	# Create delete list for qshell
 		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz"`
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
@@ -262,14 +262,14 @@ if [ "${DAY}" != "0" ];then
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] finished clean backup and logs files based your set." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 fi
 # If you set auto upload to your qiniu bucket,then do. 
 cfg_section_QSHELL_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if qiniu config exists
 	if  [[ "${ACCESS_Key}" = "" || "${SECRET_Key}" = "" || "${BUCKET}" = "" || "${key_prefix}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to qiniu,You must set your qiniu config.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if qshell exists
 		qshell_path="${basepath}/qshell"
@@ -297,16 +297,16 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/" -file-list="${TEMP_DIR}/file_cache.txt"
 		${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/" -file-list="${TEMP_DIR}/log_cache.txt"
 		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 		# If you set auto delete from your qiniu bucket,then do. 
 		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
 			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear qiniu files based you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
 				echo "---------------------------------------------------------------------------"
 				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
 				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
 				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished clear qiniu files based you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 			fi
 		fi
 	fi
@@ -320,7 +320,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	else
 		# Check if ftp config exists
 		if  [[ "${FTP_DIR}" = "" || "${FTP_UESR}" = "" || "${FTP_PASSWD}" = "" || "${FTP_ADDR}" = "" || "${FTP_PORT}" = "" ]];then
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to ftp,You must set your ftp config.Skip to upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set ftp config to upload to ftp.Skip to upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
 		else
 			echo "---------------------------------------------------------------------------"
 			echo "----------------------------This is ftp out put:---------------------------"
@@ -344,14 +344,14 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			bye  
 EOF
 			echo "---------------------------------------------------------------------------"
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished clear temp files." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
