@@ -236,7 +236,7 @@ for www_dir in ${WWWROOT_DIR[@]}
 do
 	cp -r ${www_dir} .
 done
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
