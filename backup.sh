@@ -15,7 +15,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.4 Beta                 #
+#                2018.1  V0.0.7 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
