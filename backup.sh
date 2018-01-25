@@ -189,9 +189,9 @@ if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	touch "${SAVE_LOG_DIR}/${log_name}"
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee "${SAVE_LOG_DIR}/${log_name}"
 fi
-# Check if mysqldump command exists
-if ! [ -x "$(command -v mysqldump)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Exit.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+# Check if tar command exists
+if ! [ -x "$(command -v tar)" ]; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the tar.Exit.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
@@ -216,12 +216,21 @@ NOW=$(date +"%Y%m%d%H%M%S")
 cfg_section_MYSQL_CONFIG
 cd ${TEMP_DIR}
 rm -rf ${TEMP_DIR}/*
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
-for db_name in ${MYSQL_DBS[@]}
-do
-	mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
-done
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+# Check if mysqldump command exists
+if ! [ -x "$(command -v mysqldump)" ]; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+else
+	if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To backup mysql,You must set your mysql config.Skip to backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+	else
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+		for db_name in ${MYSQL_DBS[@]}
+		do
+			mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
+		done
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+	fi
+fi
 # Start backup wwwroot
 for www_dir in ${WWWROOT_DIR[@]}
 do
@@ -290,7 +299,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		echo "---------------------------------------------------------------------------"
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
 		# If you set auto delete from your qiniu bucket,then do. 
-		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ]; then    
+		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
 			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear qiniu files based you set." | tee "${SAVE_LOG_DIR}/${log_name}"
 				echo "---------------------------------------------------------------------------"
@@ -299,6 +308,43 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 				echo "---------------------------------------------------------------------------"
 				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished clear qiniu files based you set." | tee "${SAVE_LOG_DIR}/${log_name}"
 			fi
+		fi
+	fi
+fi
+# If you set auto upload to your ftp server,then do.
+cfg_section_FTP_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check if ftp command exists
+	if ! [ -x "$(command -v ftp)" ];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ftp.Skip to upload to your ftp server.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+	else
+		# Check if ftp config exists
+		if  [[ "${FTP_DIR}" = "" || "${FTP_UESR}" = "" || "${FTP_PASSWD}" = "" || "${FTP_ADDR}" = "" || "${FTP_PORT}" = "" ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to ftp,You must set your ftp config.Skip to upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
+		else
+			echo "---------------------------------------------------------------------------"
+			echo "----------------------------This is ftp out put:---------------------------"
+			# Connect to ftp server
+			ftp -n << EOF
+			open ${FTP_ADDR} ${FTP_PORT}
+			user ${FTP_UESR} ${FTP_PASSWD}
+			binary  
+			mkdir "${FTP_DIR}" 
+			mkdir "./${FTP_DIR}/save" 
+			mkdir "./${FTP_DIR}/log" 
+			prompt  
+			cd "./${FTP_DIR}/save"
+			lcd ${SAVE_DIR} 
+			mput *.* 
+			cd ~
+			cd "./${FTP_DIR}/log"
+			lcd ${SAVE_LOG_DIR} 
+			mput *.* 
+			close  
+			bye  
+EOF
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
