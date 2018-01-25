@@ -221,7 +221,7 @@ if ! [ -x "$(command -v mysqldump)" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
 else
 	if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To backup mysql,You must set your mysql config.Skip to backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql.Skip mysql backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
 		for db_name in ${MYSQL_DBS[@]}
@@ -341,7 +341,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			mkdir "/${FTP_DIR}/log" 
 			prompt  
 			put ${backup_path} "${FTP_DIR}/save/backup.$NOW.tar.gz"
-			put ${log_path} "${FTP_DIR}/save/${log_name}"
+			put ${log_path} "${FTP_DIR}/log/${log_name}"
 			cd "./${FTP_DIR}/save"
 			lcd ${SAVE_DIR} 
 			mdelete ${ftp_delete_bak_list}
