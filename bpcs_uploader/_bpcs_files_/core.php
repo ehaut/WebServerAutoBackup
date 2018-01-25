@@ -83,9 +83,9 @@ function du_oauth_device($appkey,$appsec){
   oaerr($device_array);
 
   echo <<<EOF
-Launch your favorite web browser and visit $device_array[verification_url]
-Input $device_array[user_code] as the user code if asked.
-After granting access to the application, come back here and press Enter to continue.
+Launch your favorite web browser and visit $device_array[verification_url] 用浏览器打开这个网址，登陆百度云账号
+Input $device_array[user_code] as the user code if asked.在文本框中输入前面的一串字符
+After granting access to the application, come back here and press Enter to continue. 在获得权限之后再返回这里，按回车继续
 
 EOF;
   getline();
