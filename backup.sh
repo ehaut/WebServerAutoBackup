@@ -6,7 +6,7 @@ export TERM=${TERM:-dumb}
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
-# Test by CentOS6&7 X64
+# Test by CentOS6&7 X64 and Ubuntu16.04 x64
 # Do not edit this script.
 #-----------------------------
 
@@ -20,7 +20,7 @@ printf "
 # Please add your server information in this script  #
 #           configuration and run as root            #
 #                                                    #
-#         Designed by CHN-STUDENT && Noisky          #
+#         Designed by CHN-STUDENT && Noisky && sunriseydy         #
 ###################################################### 
 It may take some time,please wait...
 "
@@ -238,7 +238,7 @@ do
 done
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finish pack up backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
@@ -348,11 +348,60 @@ EOF
 		fi
 	fi
 fi
+
+# If you set auto upload to your BaiDuYun,then do that below.
+
+cfg_section_BPCS_UPLOADER_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check out whether bpcs_uploader directory exists
+	bpcs_uploader_dir="${basepath}/bpcs_uploader"
+	if  ! [ -d "${bpcs_uploader_dir}"  ];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun,you must hava the bpcs_uploader files.Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+	else
+		#Check out whether the bpcs_uploader.php exists
+		bpcs_uploader_path="${bpcs_uploader_dir}/bpcs_uploader.php"
+		if ! [ -f "${bpcs_uploader_path}"  ]; then 
+			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		else
+			# Check if php command exists
+			if ! [ -x "$(command -v php)" ]; then
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			else
+				php_path=`which php`
+				# Give the bpcs_uploader.php executed permission
+				if ! [ -x ${bpcs_uploader_path} ];then
+					chmod a+x ${bpcs_uploader_path}
+				fi
+				# Check out whether the bpcs_uploader has been initialized
+				bpcs_uploader_config_dir="${bpcs_uploader_dir}/_bpcs_files_/config"
+				if ! [ -f "${bpcs_uploader_config_dir}/config.lock"  ]; then 
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must initialize the bpcs_uploader.Next to quick inti it." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee "${SAVE_LOG_DIR}/${log_name}"
+					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} quickinit
+				else
+					# Start upload to BaiDuYun 
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee "${SAVE_LOG_DIR}/${log_name}"
+					
+					# If you set auto delete from BaiDuYun,then do. 
+					if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee "${SAVE_LOG_DIR}/${log_name}"
+						for files_name in ${files_list}
+						do
+							${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} delete ${BDY_DIR}/files_name
+						done
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files based on your set finished." | tee "${SAVE_LOG_DIR}/${log_name}"
+					fi
+				fi 
+			fi
+		fi
+	fi
+fi
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Finished clear temp files." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee "${SAVE_LOG_DIR}/${log_name}"
-printf "Backup successful.
-"
+printf "Backup successful."
