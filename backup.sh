@@ -236,8 +236,10 @@ for www_dir in ${WWWROOT_DIR[@]}
 do
 	cp -r ${www_dir} .
 done
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee "${SAVE_LOG_DIR}/${log_name}"
+backup_path="${SAVE_DIR}/backup.$NOW.tar.gz"
+log_path="${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_DAY_CONFIG
@@ -253,10 +255,12 @@ if [ "${DAY}" != "0" ];then
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
+			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
 			echo "${key_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 		done
 		for logs_name in ${logs_list}
 		do
+			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_log.txt														 
 			echo "${key_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/qiniu_delete_log.txt
 		done
 	# Start clean
@@ -284,18 +288,12 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		# Set qshell account
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee "${SAVE_LOG_DIR}/${log_name}"
 		${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start make upload list." | tee "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		echo "--------------------------This is qshell out put:--------------------------"
-		# Update the files list cache 
-		${qshell_path} dircache ${SAVE_DIR} "${TEMP_DIR}/file_cache.txt"
-		${qshell_path} dircache ${SAVE_LOG_DIR} "${TEMP_DIR}/log_cache.txt"
-		echo "---------------------------------------------------------------------------"
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
 		echo "---------------------------------------------------------------------------"
+		echo "--------------------------This is qshell out put:--------------------------"
 		# Start upload to qiniu bucket by qshell
-		${qshell_path} qupload2 -src-dir=${SAVE_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/save/" -file-list="${TEMP_DIR}/file_cache.txt"
-		${qshell_path} qupload2 -src-dir=${SAVE_LOG_DIR} -bucket=${BUCKET} -key-prefix="${key_prefix}/log/" -file-list="${TEMP_DIR}/log_cache.txt"
+		${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
+		${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
 		echo "---------------------------------------------------------------------------"
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 		# If you set auto delete from your qiniu bucket,then do. 
@@ -322,6 +320,15 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		if  [[ "${FTP_DIR}" = "" || "${FTP_UESR}" = "" || "${FTP_PASSWD}" = "" || "${FTP_ADDR}" = "" || "${FTP_PORT}" = "" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set ftp config to upload to ftp.Skip to upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
 		else
+			ftp_delete_bak_list=""
+			ftp_delete_log_list=""
+			# Make delete list for ftp
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+					ftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+					ftp_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
+				fi
+			fi
 			echo "---------------------------------------------------------------------------"
 			echo "----------------------------This is ftp out put:---------------------------"
 			# Connect to ftp server
@@ -330,20 +337,22 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			user ${FTP_UESR} ${FTP_PASSWD}
 			binary  
 			mkdir "${FTP_DIR}" 
-			mkdir "./${FTP_DIR}/save" 
-			mkdir "./${FTP_DIR}/log" 
+			mkdir "/${FTP_DIR}/save" 
+			mkdir "/${FTP_DIR}/log" 
 			prompt  
+			put ${backup_path} "${FTP_DIR}/save/backup.$NOW.tar.gz"
+			put ${log_path} "${FTP_DIR}/save/${log_name}"
 			cd "./${FTP_DIR}/save"
 			lcd ${SAVE_DIR} 
-			mput *.* 
+			mdelete ${ftp_delete_bak_list}
 			cd ~
-			cd "./${FTP_DIR}/log"
+			cd "/${FTP_DIR}/log"
 			lcd ${SAVE_LOG_DIR} 
-			mput *.* 
+			mdelete ${ftp_delete_log_list}					 
 			close  
 			bye  
 EOF
-			echo "---------------------------------------------------------------------------"
+			echo -e "\n---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
