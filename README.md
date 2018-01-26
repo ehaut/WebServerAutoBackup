@@ -44,7 +44,11 @@ WEB 服务器自动备份脚本 （Shell）
     chmod a+x backup.sh
     ./backup.sh
 	
-	注意在第一次使用bpcs_uploader工具时需要进行工具的快速初始化，请根据脚本里的提示进行操作
+	注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
+
+bpcs_uploader工具使用说明： 
+[bpcs_uploader/README.md](https://github.com/sunriseydy/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
+
 
 添加计划任务，每天凌晨两点自动备份
     
