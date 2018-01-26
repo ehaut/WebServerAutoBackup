@@ -15,7 +15,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.4 Beta                 #
+#                2018.1  V0.0.5 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -307,6 +307,61 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 			fi
 		fi
+	fi
+fi
+# If you set auto upload to your upx bucket,then do. 
+cfg_section_UPX_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check if upx config exists
+	if  [[ "${UPX_UESR}" = "" || "${UPX_PASSWD}" = "" || "${BUCKET}" = "" || "${UPX_DIR}" = "" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+	else
+		# Check if upx exists
+		upx_path="${basepath}/upx"
+		if [ "${upx_path}" = "" ];then 
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			exit 1
+		fi
+		# Give its permission
+		if ! [ -x ${upx_path} ];then
+			chmod a+x ${upx_path}
+		fi
+		# Login your upaiyun
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "---------------------------------------------------------------------------"
+		echo "----------------------------This is upx out put:---------------------------"
+		${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
+		# Create the folder
+		${upx_path} mkdir /${UPX_DIR}
+		${upx_path} mkdir /${UPX_DIR}/save
+		${upx_path} mkdir /${UPX_DIR}/log
+		echo "---------------------------------------------------------------------------"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "---------------------------------------------------------------------------"
+		${upx_path} cd /${UPX_DIR}/save
+		${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
+		${upx_path} cd /${UPX_DIR}/log
+		${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
+		echo "---------------------------------------------------------------------------"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		# If you set auto delete from your upaiyun bucket,then do. 
+		if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+				upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+				upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "---------------------------------------------------------------------------"
+				${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
+				${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
+				echo "---------------------------------------------------------------------------"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+			fi
+		fi
+		# Logout your upaiyun
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "---------------------------------------------------------------------------"
+		${upx_path} logout
+		echo "---------------------------------------------------------------------------"
 	fi
 fi
 # If you set auto upload to your ftp server,then do.
