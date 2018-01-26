@@ -6,7 +6,7 @@ export TERM=${TERM:-dumb}
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
-# Test by CentOS6&7 X64 and Ubuntu16.04 x64
+# Test by CentOS6&7 X64
 # Do not edit this script.
 #-----------------------------
 
@@ -20,7 +20,7 @@ printf "
 # Please add your server information in this script  #
 #           configuration and run as root            #
 #                                                    #
-#  Designed by CHN-STUDENT && Noisky && sunriseydy   #
+#         Designed by CHN-STUDENT && Noisky          #
 ###################################################### 
 It may take some time,please wait...
 "
@@ -242,6 +242,8 @@ tar -czf${SAVE_DIR}/backup.$NOW.tar.gz *
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
+cfg_section_QSHELL_CONFIG
+qiniu_delete_prefix="${key_prefix}"
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -256,12 +258,7 @@ if [ "${DAY}" != "0" ];then
 		for files_name in ${files_list}
 		do
 			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
-			echo "${key_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
-		done
-		for logs_name in ${logs_list}
-		do
-			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_log.txt														 
-			echo "${key_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/qiniu_delete_log.txt
+			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
@@ -281,41 +278,50 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	if  [[ "${ACCESS_Key}" = "" || "${SECRET_Key}" = "" || "${BUCKET}" = "" || "${key_prefix}" = "" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
-		# Check if qshell exists
 		if [ ${OS_TYPE}="X64" ];then
 			qshell_path="${basepath}/qshell64"
 		else
 			qshell_path="${basepath}/qshell86"
 		fi
-		if [ "${qshell_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			exit 1
+		if [[ ( ! -x "$(command -v wget)" ) && ( ! -f "${qshell_path}" ) ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download qshell to upload qiniu.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
-		# Give its permission
-		if ! [ -x ${qshell_path} ];then
-			chmod a+x ${qshell_path}
-		fi
-		# Set qshell account
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		echo "--------------------------This is qshell out put:--------------------------"
-		# Start upload to qiniu bucket by qshell
-		${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
-		${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		# If you set auto delete from your qiniu bucket,then do. 
-		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
-			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-				echo "---------------------------------------------------------------------------"
-				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
-				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
-				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		# Check if qshell exists
+		if [ ! -f "${qshell_path}"  ];then 
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find qshell.Now start to download." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			if [ ${OS_TYPE}="X64" ];then
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell64" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x64
+			else
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell86" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x86
 			fi
+		fi
+		if [ -f "${qshell_path}"  ];then 
+			# Give its permission
+			if ! [ -x ${qshell_path} ];then
+				chmod a+x ${qshell_path}
+			fi
+			# Set qshell account
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			echo "--------------------------This is qshell out put:--------------------------"
+			# Start upload to qiniu bucket by qshell
+			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.tar.gz" ${backup_path}
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			# If you set auto delete from your qiniu bucket,then do. 
+			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
+				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					echo "---------------------------------------------------------------------------"
+					${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
+					echo "---------------------------------------------------------------------------"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				fi
+			fi
+		else
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
@@ -326,56 +332,113 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	if  [[ "${UPX_UESR}" = "" || "${UPX_PASSWD}" = "" || "${BUCKET}" = "" || "${UPX_DIR}" = "" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
-		# Check if upx exists
 		if [ ${OS_TYPE}="X64" ];then
 			upx_path="${basepath}/upx64"
 		else
 			upx_path="${basepath}/upx86"
 		fi
-		if [ "${upx_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			exit 1
+		if  [[ ( ! -x "$(command -v wget)" ) && ( ! -f "${upx_path}" ) ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download upx to upload upaiyun.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
-		# Give its permission
-		if ! [ -x ${upx_path} ];then
-			chmod a+x ${upx_path}
-		fi
-		# Login your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		echo "----------------------------This is upx out put:---------------------------"
-		${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
-		# Create the folder
-		${upx_path} mkdir /${UPX_DIR}
-		${upx_path} mkdir /${UPX_DIR}/save
-		${upx_path} mkdir /${UPX_DIR}/log
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		${upx_path} cd /${UPX_DIR}/save
-		${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
-		${upx_path} cd /${UPX_DIR}/log
-		${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		# If you set auto delete from your upaiyun bucket,then do. 
-		if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
-			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
-				upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-				echo "---------------------------------------------------------------------------"
-				${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
-				${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
-				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		# Check if qshell exists
+		if [ ! -f "${upx_path}" ];then 
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find upx.Now start to download." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			if [ ${OS_TYPE}="X64" ];then
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/upx64" http://collection.b0.upaiyun.com/softwares/upx/upx-linux-amd64-v0.2.3
+			else
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/upx86" http://collection.b0.upaiyun.com/softwares/upx/upx-linux-386-v0.2.3
 			fi
 		fi
-		# Logout your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		${upx_path} logout
-		echo "---------------------------------------------------------------------------"
+		# Check if upx exists
+		if [ -f "${upx_path}" ];then 
+			# Give its permission
+			if ! [ -x ${upx_path} ];then
+				chmod a+x ${upx_path}
+			fi
+			# Login your upaiyun
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			echo "----------------------------This is upx out put:---------------------------"
+			${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
+			# Create the folder
+			${upx_path} mkdir /${UPX_DIR}
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			${upx_path} cd /${UPX_DIR}
+			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.tar.gz" 
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			# If you set auto delete from your upaiyun bucket,then do. 
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					echo "---------------------------------------------------------------------------"
+					${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
+					echo "---------------------------------------------------------------------------"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				fi
+			fi
+			# Logout your upaiyun
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			${upx_path} logout
+			echo "---------------------------------------------------------------------------"
+		else
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		fi
+	fi
+fi
+# If you set auto upload to your BaiDuYun,then do that below.
+cfg_section_BPCS_UPLOADER_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check out whether bpcs_uploader directory exists
+	bpcs_uploader_dir="${basepath}/bpcs_uploader"
+	if  ! [ -d "${bpcs_uploader_dir}"  ];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun,you must hava the bpcs_uploader files.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	else
+		#Check out whether the bpcs_uploader.php exists
+		bpcs_uploader_path="${bpcs_uploader_dir}/bpcs_uploader.php"
+		if ! [ -f "${bpcs_uploader_path}"  ]; then 
+			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		else
+			# Check if php command exists
+			php_path=`command -v php`
+			if ! [ -x "${php_path}" ]; then
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			else
+				if ! [ -x "$(command -v curl)" ];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the curl.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				else
+					# Give the bpcs_uploader.php executed permission
+					if ! [ -x ${bpcs_uploader_path} ];then
+						chmod a+x ${bpcs_uploader_path}
+					fi
+					# Check out whether the bpcs_uploader has been initialized，if not，always do that.
+					bpcs_uploader_config_dir="${bpcs_uploader_dir}/_bpcs_files_/config"
+					while ! [ -f "${bpcs_uploader_config_dir}/config.lock"  ]
+					do
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must initialize the bpcs_uploader.Next to quick inti it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} quickinit
+					done
+					# Start upload to BaiDuYun 
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					# If you set auto delete from BaiDuYun,then do. 
+					if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						for files_name in ${files_list}
+						do
+							${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} delete ${BDY_DIR}/$(basename ${files_name})
+						done
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files based on your set finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					fi
+				fi
+			fi
+		fi
 	fi
 fi
 # If you set auto upload to your ftp server,then do.
@@ -395,9 +458,9 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					ftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
-					ftp_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
 				fi
 			fi
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to ftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			echo "----------------------------This is ftp out put:---------------------------"
 			# Connect to ftp server
@@ -406,73 +469,14 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			user ${FTP_UESR} ${FTP_PASSWD}
 			binary  
 			mkdir "${FTP_DIR}" 
-			mkdir "/${FTP_DIR}/save" 
-			mkdir "/${FTP_DIR}/log" 
 			prompt  
-			put ${backup_path} "${FTP_DIR}/save/backup.$NOW.tar.gz"
-			put ${log_path} "${FTP_DIR}/log/${log_name}"
-			cd "./${FTP_DIR}/save"
-			lcd ${SAVE_DIR} 
-			mdelete ${ftp_delete_bak_list}
-			cd ~
-			cd "/${FTP_DIR}/log"
-			lcd ${SAVE_LOG_DIR} 
-			mdelete ${ftp_delete_log_list}					 
+			put ${backup_path} "${FTP_DIR}/backup.$NOW.tar.gz"
+			mdelete ${ftp_delete_bak_list}		 
 			close  
 			bye  
 EOF
 			echo -e "\n---------------------------------------------------------------------------"
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		fi
-	fi
-fi
-
-# If you set auto upload to your BaiDuYun,then do that below.
-
-cfg_section_BPCS_UPLOADER_CONFIG
-if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
-	# Check out whether bpcs_uploader directory exists
-	bpcs_uploader_dir="${basepath}/bpcs_uploader"
-	if  ! [ -d "${bpcs_uploader_dir}"  ];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun,you must hava the bpcs_uploader files.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	else
-		#Check out whether the bpcs_uploader.php exists
-		bpcs_uploader_path="${bpcs_uploader_dir}/bpcs_uploader.php"
-		if ! [ -f "${bpcs_uploader_path}"  ]; then 
-			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		else
-			# Check if php command exists
-			php_path=`command -v php`
-			if ! [ -x "${php_path}" ]; then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			else
-				# Give the bpcs_uploader.php executed permission
-				if ! [ -x ${bpcs_uploader_path} ];then
-					chmod a+x ${bpcs_uploader_path}
-				fi
-				# Check out whether the bpcs_uploader has been initialized，if not，always do that.
-				bpcs_uploader_config_dir="${bpcs_uploader_dir}/_bpcs_files_/config"
-				while ! [ -f "${bpcs_uploader_config_dir}/config.lock"  ]
-				do
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must initialize the bpcs_uploader.Next to quick inti it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} quickinit
-				done
-				# Start upload to BaiDuYun 
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-				${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-				
-				# If you set auto delete from BaiDuYun,then do. 
-				if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					for files_name in ${files_list}
-					do
-						${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} delete ${BDY_DIR}/$(basename ${files_name})
-					done
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files based on your set finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-				fi
-			fi
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Ftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
