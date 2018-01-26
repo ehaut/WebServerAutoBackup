@@ -20,7 +20,8 @@ printf "
 # Please add your server information in this script  #
 #           configuration and run as root            #
 #                                                    #
-#         Designed by CHN-STUDENT && Noisky          #
+#                    Designed by                     #
+#        CHN-STUDENT && Noisky && sunriseydy         #
 ###################################################### 
 It may take some time,please wait...
 "
