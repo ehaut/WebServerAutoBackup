@@ -34,3 +34,6 @@ Size:1.051K MD5 Sum:390d60291afd9a74a2b613a92e073286
 上传备份文件成功，请到你的百度云根目录/我的应用数据（apps）/bpcs_uploader/你设置的百度云保存文件夹/ 下查看是否上传成功
 
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/4-1.png)
+
+
+更多bpcs_uploader的说明请看我的博客：[百度网盘命令行上传下载工具：bpcs_uploader](https://blog.sunriseydy.top/daily/bpcs_uploader/ "百度网盘命令行上传下载工具：bpcs_uploader")
