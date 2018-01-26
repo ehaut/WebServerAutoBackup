@@ -187,27 +187,27 @@ fi
 log_name="$(date +"%Y%m%d").backup.log"
 if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	touch "${SAVE_LOG_DIR}/${log_name}"
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check if tar command exists
 if ! [ -x "$(command -v tar)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the tar.Exit.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the tar.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
 cfg_section_WWWROOT_CONFIG
 if [[ "${WWWROOT_DIR}" = "" ]]; then 
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the wwwroot directory.Exit.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the wwwroot directory.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if temp folder exists
 cfg_section_TEMP_CONFIG
 if [[ "${TEMP_DIR}" = "" ]]; then 
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the temp directory.Exit.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the temp directory.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 if ! [ -d "${TEMP_DIR}"  ]; then 
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder does not exist,create it." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	mkdir -p "${TEMP_DIR}" 
 fi 
 # Get server time
@@ -218,17 +218,17 @@ cd ${TEMP_DIR}
 rm -rf ${TEMP_DIR}/*
 # Check if mysqldump command exists
 if ! [ -x "$(command -v mysqldump)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 else
 	if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql.Skip mysql backup." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql.Skip mysql backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		for db_name in ${MYSQL_DBS[@]}
 		do
 			mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
 		done
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
 # Start backup wwwroot
@@ -239,17 +239,17 @@ done
 backup_path="${SAVE_DIR}/backup.$NOW.tar.gz"
 log_path="${SAVE_LOG_DIR}/${log_name}"
 tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee "${SAVE_LOG_DIR}/${log_name}"
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	rm -rf ${TEMP_DIR}/*
 	exit 1
 fi
 if [ "${DAY}" != "0" ];then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	# Create delete list for qshell
 		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz"`
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
@@ -266,7 +266,7 @@ if [ "${DAY}" != "0" ];then
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check OS type
 if [ $(getconf WORD_BIT) = '32' ] && [ $(getconf LONG_BIT) = '64' ] ; then
@@ -279,7 +279,7 @@ cfg_section_QSHELL_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if qiniu config exists
 	if  [[ "${ACCESS_Key}" = "" || "${SECRET_Key}" = "" || "${BUCKET}" = "" || "${key_prefix}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if qshell exists
 		if [ ${OS_TYPE}="X64" ];then
@@ -288,7 +288,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			qshell_path="${basepath}/qshell86"
 		fi
 		if [ "${qshell_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			exit 1
 		fi
 		# Give its permission
@@ -296,25 +296,25 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			chmod a+x ${qshell_path}
 		fi
 		# Set qshell account
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		echo "---------------------------------------------------------------------------"
 		echo "--------------------------This is qshell out put:--------------------------"
 		# Start upload to qiniu bucket by qshell
 		${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
 		${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
 		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		# If you set auto delete from your qiniu bucket,then do. 
 		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
 			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				echo "---------------------------------------------------------------------------"
 				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
 				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
 				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			fi
 		fi
 	fi
@@ -324,7 +324,7 @@ cfg_section_UPX_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if upx config exists
 	if  [[ "${UPX_UESR}" = "" || "${UPX_PASSWD}" = "" || "${BUCKET}" = "" || "${UPX_DIR}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if upx exists
 		if [ ${OS_TYPE}="X64" ];then
@@ -333,7 +333,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			upx_path="${basepath}/upx86"
 		fi
 		if [ "${upx_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			exit 1
 		fi
 		# Give its permission
@@ -341,7 +341,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			chmod a+x ${upx_path}
 		fi
 		# Login your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		echo "---------------------------------------------------------------------------"
 		echo "----------------------------This is upx out put:---------------------------"
 		${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
@@ -350,29 +350,29 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		${upx_path} mkdir /${UPX_DIR}/save
 		${upx_path} mkdir /${UPX_DIR}/log
 		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		echo "---------------------------------------------------------------------------"
 		${upx_path} cd /${UPX_DIR}/save
 		${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
 		${upx_path} cd /${UPX_DIR}/log
 		${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
 		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		# If you set auto delete from your upaiyun bucket,then do. 
 		if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
 			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 				upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 				upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				echo "---------------------------------------------------------------------------"
 				${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
 				${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
 				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			fi
 		fi
 		# Logout your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		echo "---------------------------------------------------------------------------"
 		${upx_path} logout
 		echo "---------------------------------------------------------------------------"
@@ -383,11 +383,11 @@ cfg_section_FTP_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if ftp command exists
 	if ! [ -x "$(command -v ftp)" ];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ftp.Skip to upload to your ftp server.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ftp.Skip to upload to your ftp server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if ftp config exists
 		if  [[ "${FTP_DIR}" = "" || "${FTP_UESR}" = "" || "${FTP_PASSWD}" = "" || "${FTP_ADDR}" = "" || "${FTP_PORT}" = "" ]];then
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set ftp config to upload to ftp.Skip to upload to ftp." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set ftp config to upload to ftp.Skip to upload to ftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		else
 			ftp_delete_bak_list=""
 			ftp_delete_log_list=""
@@ -422,7 +422,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			bye  
 EOF
 			echo -e "\n---------------------------------------------------------------------------"
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
@@ -434,17 +434,17 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check out whether bpcs_uploader directory exists
 	bpcs_uploader_dir="${basepath}/bpcs_uploader"
 	if  ! [ -d "${bpcs_uploader_dir}"  ];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun,you must hava the bpcs_uploader files.Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun,you must hava the bpcs_uploader files.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		#Check out whether the bpcs_uploader.php exists
 		bpcs_uploader_path="${bpcs_uploader_dir}/bpcs_uploader.php"
 		if ! [ -f "${bpcs_uploader_path}"  ]; then 
-			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		else
 			# Check if php command exists
 			php_path=`command -v php`
 			if ! [ -x "${php_path}" ]; then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			else
 				# Give the bpcs_uploader.php executed permission
 				if ! [ -x ${bpcs_uploader_path} ];then
@@ -454,34 +454,34 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 				bpcs_uploader_config_dir="${bpcs_uploader_dir}/_bpcs_files_/config"
 				while ! [ -f "${bpcs_uploader_config_dir}/config.lock"  ]
 				do
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must initialize the bpcs_uploader.Next to quick inti it." | tee "${SAVE_LOG_DIR}/${log_name}"
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must initialize the bpcs_uploader.Next to quick inti it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} quickinit
 				done
 				# Start upload to BaiDuYun 
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee "${SAVE_LOG_DIR}/${log_name}"
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				
 				# If you set auto delete from BaiDuYun,then do. 
 				if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					for files_name in ${files_list}
 					do
-						${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} delete ${BDY_DIR}/files_name
+						${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} delete ${BDY_DIR}/$(basename ${files_name})
 					done
-					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files based on your set finished." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files based on your set finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				fi
 			fi
 		fi
 	fi
 fi
 # All clear
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Finished
-echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee "${SAVE_LOG_DIR}/${log_name}"
+echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
 
