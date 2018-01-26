@@ -242,6 +242,8 @@ tar -czf${SAVE_DIR}/backup.$NOW.tar.gz *
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee "${SAVE_LOG_DIR}/${log_name}"
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
+cfg_section_QSHELL_CONFIG
+qiniu_delete_prefix="${key_prefix}"
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee "${SAVE_LOG_DIR}/${log_name}"
@@ -256,12 +258,12 @@ if [ "${DAY}" != "0" ];then
 		for files_name in ${files_list}
 		do
 			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
-			echo "${key_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
+			echo "${qiniu_delete_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 		done
 		for logs_name in ${logs_list}
 		do
 			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_log.txt														 
-			echo "${key_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/qiniu_delete_log.txt
+			echo "${qiniu_delete_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/qiniu_delete_log.txt
 		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
