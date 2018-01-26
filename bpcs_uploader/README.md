@@ -17,7 +17,7 @@ After granting access to the application, come back here and press Enter to cont
 
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/2-1.png)
 
-输入上面的字符串
+输入上面的字符串（这个字符串每一次都不一样，每一个设备也不一样）
 
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/3-1.png)
 完成授权后回到命令行，按回车继续
