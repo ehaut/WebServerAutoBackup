@@ -281,41 +281,52 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	if  [[ "${ACCESS_Key}" = "" || "${SECRET_Key}" = "" || "${BUCKET}" = "" || "${key_prefix}" = "" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
-		# Check if qshell exists
 		if [ ${OS_TYPE}="X64" ];then
 			qshell_path="${basepath}/qshell64"
 		else
 			qshell_path="${basepath}/qshell86"
 		fi
-		if [ "${qshell_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
-			exit 1
+		if [[ ( ! -x "$(command -v wget)" ) && ( ! -f "${qshell_path}" ) ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download qshell to upload qiniu.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
-		# Give its permission
-		if ! [ -x ${qshell_path} ];then
-			chmod a+x ${qshell_path}
-		fi
-		# Set qshell account
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee "${SAVE_LOG_DIR}/${log_name}"
-		${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		echo "--------------------------This is qshell out put:--------------------------"
-		# Start upload to qiniu bucket by qshell
-		${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
-		${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
-		# If you set auto delete from your qiniu bucket,then do. 
-		if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
-			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
-				echo "---------------------------------------------------------------------------"
-				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
-				${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
-				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		# Check if qshell exists
+		if [ ! -f "${qshell_path}"  ];then 
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find qshell.Now start to download." | tee "${SAVE_LOG_DIR}/${log_name}"
+			if [ ${OS_TYPE}="X64" ];then
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell64" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x64
+			else
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell86" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x86
 			fi
+		fi
+		if [ -f "${qshell_path}"  ];then 
+			# Give its permission
+			if ! [ -x ${qshell_path} ];then
+				chmod a+x ${qshell_path}
+			fi
+			# Set qshell account
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee "${SAVE_LOG_DIR}/${log_name}"
+			${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			echo "--------------------------This is qshell out put:--------------------------"
+			# Start upload to qiniu bucket by qshell
+			${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
+			${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+			# If you set auto delete from your qiniu bucket,then do. 
+			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
+				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "---------------------------------------------------------------------------"
+					${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
+					${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
+					echo "---------------------------------------------------------------------------"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+				fi
+			fi
+		else
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
@@ -326,56 +337,68 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	if  [[ "${UPX_UESR}" = "" || "${UPX_PASSWD}" = "" || "${BUCKET}" = "" || "${UPX_DIR}" = "" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
-		# Check if upx exists
 		if [ ${OS_TYPE}="X64" ];then
 			upx_path="${basepath}/upx64"
 		else
 			upx_path="${basepath}/upx86"
 		fi
-		if [ "${upx_path}" = "" ];then 
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
-			exit 1
+		if  [[ ( ! -x "$(command -v wget)" ) && ( ! -f "${upx_path}" ) ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download upx to upload upaiyun.${CEND}" | tee "${SAVE_LOG_DIR}/${log_name}"
 		fi
-		# Give its permission
-		if ! [ -x ${upx_path} ];then
-			chmod a+x ${upx_path}
-		fi
-		# Login your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		echo "----------------------------This is upx out put:---------------------------"
-		${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
-		# Create the folder
-		${upx_path} mkdir /${UPX_DIR}
-		${upx_path} mkdir /${UPX_DIR}/save
-		${upx_path} mkdir /${UPX_DIR}/log
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		${upx_path} cd /${UPX_DIR}/save
-		${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
-		${upx_path} cd /${UPX_DIR}/log
-		${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
-		echo "---------------------------------------------------------------------------"
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
-		# If you set auto delete from your upaiyun bucket,then do. 
-		if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
-			if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-				upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
-				upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
-				echo "---------------------------------------------------------------------------"
-				${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
-				${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
-				echo "---------------------------------------------------------------------------"
-				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+		# Check if qshell exists
+		if [ ! -f "${upx_path}" ];then 
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find upx.Now start to download." | tee "${SAVE_LOG_DIR}/${log_name}"
+			if [ ${OS_TYPE}="X64" ];then
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/upx64" http://collection.b0.upaiyun.com/softwares/upx/upx-linux-amd64-v0.2.3
+			else
+				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/upx86" http://collection.b0.upaiyun.com/softwares/upx/upx-linux-386-v0.2.3
 			fi
 		fi
-		# Logout your upaiyun
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
-		echo "---------------------------------------------------------------------------"
-		${upx_path} logout
-		echo "---------------------------------------------------------------------------"
+		# Check if upx exists
+		if [ -f "${upx_path}" ];then 
+			# Give its permission
+			if ! [ -x ${upx_path} ];then
+				chmod a+x ${upx_path}
+			fi
+			# Login your upaiyun
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Login your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			echo "----------------------------This is upx out put:---------------------------"
+			${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
+			# Create the folder
+			${upx_path} mkdir /${UPX_DIR}
+			${upx_path} mkdir /${UPX_DIR}/save
+			${upx_path} mkdir /${UPX_DIR}/log
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			${upx_path} cd /${UPX_DIR}/save
+			${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
+			${upx_path} cd /${UPX_DIR}/log
+			${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
+			echo "---------------------------------------------------------------------------"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+			# If you set auto delete from your upaiyun bucket,then do. 
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+					upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
+					echo "---------------------------------------------------------------------------"
+					${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
+					${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
+					echo "---------------------------------------------------------------------------"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
+				fi
+			fi
+			# Logout your upaiyun
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Logout your upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+			echo "---------------------------------------------------------------------------"
+			${upx_path} logout
+			echo "---------------------------------------------------------------------------"
+		else
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
+		fi
 	fi
 fi
 # If you set auto upload to your ftp server,then do.
