@@ -3,7 +3,7 @@
 This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,BaiDuCloud(which will be implemented in the future)
 
 WEB 服务器自动备份脚本 （Shell）  
-仅在CentOS 6 x64 && CentOS 7 x64 测试通过
+仅在CentOS 6 x64 && CentOS 7 x64 Ubuntu 16.04 x64 上测试通过
 
 已实现功能：
  - 自动备份网站和数据库到本地
@@ -13,13 +13,14 @@ WEB 服务器自动备份脚本 （Shell）
  - 自动将备份文件上传到七牛云并和本地同步删除
  - 自动将备份文件上传到又拍云并和本地同步删除
  - 自动将备份文件上传到ftp服务器并和本地同步删除
+ - 自动将备份文件上传到百度云并和本地同步删除
 
 将来会实现的功能：
- - 自动将备份文件上传到百度云（正在积极和其他大佬协助开发）
  - 自动判断机器类型，下载相应的云上传工具
  - 兼容更多的linux发行版
  
-原理：通过ini解析引擎解析用户配置文件`config.ini`,通过`mysqldump`导出数据库，`tar`压缩备份，调用七牛官方`qshell`上传七牛云，调用又拍官方`upx`上传又拍云，调用`ftp`上传ftp
+原理：通过ini解析引擎解析用户配置文件`config.ini`,通过`mysqldump`导出数据库，`tar`压缩备份，调用七牛官方`qshell`上传七牛云，调用又拍官方`upx`上传又拍云，调用 bpcs_uploader 上传百度云，调用`ftp`上传ftp
+
 
 不足：
  - 由于tar绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除
@@ -33,14 +34,17 @@ WEB 服务器自动备份脚本 （Shell）
 
 使用方法：
 
-	//请保证机器安装tar、mysql，以及配置文件设置正确
+	//请保证机器安装tar、mysql、php、wget和curl，以及配置文件设置正确
 	//如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
+
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
 	//如果国内clone速度慢可打包下载后上传到服务器
     cd WebServerAutoBackup
     vi config.ini //修改配置文件内的网站、数据库等参数
     chmod a+x backup.sh
     ./backup.sh
+	
+	注意在第一次使用bpcs_uploader工具时需要进行工具的快速初始化，请根据脚本里的提示进行操作
 
 添加计划任务，每天凌晨两点自动备份
     
@@ -53,6 +57,12 @@ WEB 服务器自动备份脚本 （Shell）
 
 Github：https://github.com/albfan/bash-ini-parser
 
+
+- bpcs_uploader 百度云上传工具
+
+Github：https://github.com/oott123/bpcs_uploader
+
+
 - 七牛官方Shell工具 `qshell`
 
 Github：https://github.com/qiniu/qshell/
@@ -60,4 +70,5 @@ Github：https://github.com/qiniu/qshell/
 - 又拍官方Shell工具 `upx`
 
 Github：https://github.com/polym/upx
+
 
