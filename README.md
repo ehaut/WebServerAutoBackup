@@ -10,16 +10,22 @@ WEB 服务器自动备份脚本 （Shell）
  - 自动记录日志到文件
  - 自动删除三天前的备份文件和日志
  - 备份脚本和配置文件分离（通过ini解析引擎解析外置config.ini）
+ - 自动判断机器类型，下载相应的云上传工具
  - 自动将备份文件上传到七牛云并和本地同步删除
  - 自动将备份文件上传到又拍云并和本地同步删除
  - 自动将备份文件上传到ftp服务器并和本地同步删除
 
 将来会实现的功能：
  - 自动将备份文件上传到百度云（正在积极和其他大佬协助开发）
- - 自动判断机器类型，下载相应的云上传工具
  - 兼容更多的linux发行版
  
-原理：通过ini解析引擎解析用户配置文件`config.ini`,通过`mysqldump`导出数据库，`tar`压缩备份，调用七牛官方`qshell`上传七牛云，调用又拍官方`upx`上传又拍云，调用`ftp`上传ftp
+原理：
+- 通过ini解析引擎`bash-ini-parser`解析用户配置文件`config.ini`
+- 通过`mysqldump`导出数据库
+- `tar`压缩备份
+- 判断是否存在七牛官方`qshell`,又拍官方`upx`,如果没有使用`wget`下载，
+- 下载好调用`qshell`上传七牛云或者`upx`又拍云
+- 调用`ftp`上传ftp
 
 不足：
  - 由于tar绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除
@@ -36,11 +42,11 @@ WEB 服务器自动备份脚本 （Shell）
 	//请保证机器安装tar、mysql，以及配置文件设置正确
 	//如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
-	//如果国内clone速度慢可打包下载后上传到服务器
-    cd WebServerAutoBackup
-    vi config.ini //修改配置文件内的网站、数据库等参数
-    chmod a+x backup.sh
-    ./backup.sh
+	//如果国内clone速度慢可只下载 config.ini 和 backup.sh ，如果网络正确且机器安装wget命令会自动下载上传工具
+	cd WebServerAutoBackup
+	vi config.ini //修改配置文件内的网站、数据库等参数
+	chmod a+x backup.sh
+	./backup.sh
 
 添加计划任务，每天凌晨两点自动备份
     
