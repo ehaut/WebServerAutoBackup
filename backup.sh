@@ -4,7 +4,7 @@ source /etc/profile
 export TERM=${TERM:-dumb}
 #-----------------------------			  
 # WebServerAutoBackup Script		  
-# Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me>
+# Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me> && sunriseydy <i@mail.sunriseydy.top>
 # Project home page: https://github.com/CHN-STUDENT/WebServerAutoBackup
 # Test by CentOS6&7 X64
 # Do not edit this script.
@@ -488,4 +488,3 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SA
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
-

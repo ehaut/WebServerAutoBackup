@@ -1,6 +1,6 @@
 # WebServerAutoBackup
 
-This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,BaiDuCloud
+This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,BaiDuCloud,ftp
 
 WEB 服务器自动备份脚本 （Shell）  
 仅在CentOS 6 x64 && CentOS 7 x64 && Ubuntu 16.04 x64 测试通过
@@ -40,28 +40,30 @@ WEB 服务器自动备份脚本 （Shell）
 打包下载：https://github.com/CHN-STUDENT/WebServerAutoBackup/archive/master.zip
 
 使用方法：
-
-	//请保证机器安装tar、mysql，以及配置文件设置正确
-	//如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
-	//使用wget自动下载云上传工具需要安装wget
-	//使用百度云上传需要安装php和curl
+	
+	yum -y install wget tar ftp curl #for CentOS/Redhat
+	# apt-get -y install wget tar ftp curl #for Debian/Ubuntu
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
-	//如果国内clone速度慢可只下载 config.ini 和 backup.sh ，如果网络联通且机器安装wget命令会自动下载上传工具
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
 	chmod a+x backup.sh
 	./backup.sh
-	注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
-
-bpcs_uploader工具使用说明： 
-[bpcs_uploader/README.md](https://github.com/CHN-STUDENT/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
-
 
 添加计划任务，每天凌晨两点自动备份
     
     crontab -e
     0 2 * * * cd /root/WebServerAutoBackup && ./backup.sh > /data/backup/log/backup-cron.log  2>&1 & 
-    //请自行修改脚本文件目录和输出日志文件目录
+    #请自行修改脚本文件目录和输出日志文件目录
+
+注意事项：
+- 如果国内clone速度慢，可以只下载 config.ini 和 backup.sh 上传即可，机器安装好wget命令且网络通畅下程序会自动下载相应的上传工具
+- 使用前请保证机器安装tar、mysql，以及配置文件设置正确
+- 如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
+- 使用百度云上传需要安装php和curl
+- 注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
+
+bpcs_uploader工具使用说明：[bpcs_uploader/README.md](https://github.com/CHN-STUDENT/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
+
 
 ### Thanks：
 - ini 解析引擎 `bash-ini-parser`
