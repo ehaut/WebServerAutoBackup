@@ -2,7 +2,7 @@
 
 This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,BaiDuCloud,ftp
 
-## WEB 服务器自动备份脚本 （Shell）  
+### WEB 服务器自动备份脚本 （Shell）  
 仅在CentOS 6 x64 && CentOS 7 x64 && Ubuntu 16.04 x64 测试通过
 
 ## 已实现功能：
@@ -39,9 +39,7 @@ This is a script that automatically backs up your site and database to local or 
 
 打包下载：https://github.com/CHN-STUDENT/WebServerAutoBackup/archive/master.zip
 
-***
-
-## 使用方法：
+### 使用方法：
 	
 	yum -y install wget tar ftp curl #for CentOS/Redhat
 	# apt-get -y install wget tar ftp curl #for Debian/Ubuntu
@@ -51,7 +49,7 @@ This is a script that automatically backs up your site and database to local or 
 	chmod a+x backup.sh
 	./backup.sh
 
-## 添加计划任务，每天凌晨两点自动备份
+### 添加计划任务，每天凌晨两点自动备份
     
     crontab -e
     0 2 * * * cd /root/WebServerAutoBackup && ./backup.sh > /data/backup/log/backup-cron.log  2>&1 & 
