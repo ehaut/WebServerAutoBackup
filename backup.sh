@@ -268,6 +268,12 @@ if [ "${DAY}" != "0" ];then
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 fi
+# Check OS type
+if [ $(getconf WORD_BIT) = '32' ] && [ $(getconf LONG_BIT) = '64' ] ; then
+    OS_TYPE="X64"
+else
+    OS_TYPE="X86"
+fi
 # If you set auto upload to your qiniu bucket,then do. 
 cfg_section_QSHELL_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
@@ -276,7 +282,11 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set up qiniu config to upload to qiniu.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if qshell exists
-		qshell_path="${basepath}/qshell"
+		if [ ${OS_TYPE}="X64" ];then
+			qshell_path="${basepath}/qshell64"
+		else
+			qshell_path="${basepath}/qshell86"
+		fi
 		if [ "${qshell_path}" = "" ];then 
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find qshell.Skip to upload to qiniu." | tee "${SAVE_LOG_DIR}/${log_name}"
 			exit 1
@@ -317,7 +327,11 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to upaiyun,You must set your upaiyun config.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
 	else
 		# Check if upx exists
-		upx_path="${basepath}/upx"
+		if [ ${OS_TYPE}="X64" ];then
+			upx_path="${basepath}/upx64"
+		else
+			upx_path="${basepath}/upx86"
+		fi
 		if [ "${upx_path}" = "" ];then 
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee "${SAVE_LOG_DIR}/${log_name}"
 			exit 1
