@@ -30,7 +30,6 @@ WEB 服务器自动备份脚本 （Shell）
 不足：
  - 由于tar绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除
  - 无法忽略mysql-5.6及以上密码传递造成安全警告
- - qshell和upx是x64版本的，本脚本仅在64位系统测试通过
  - 由于无法在ftp里写判断语句，所以使用ftp每次强制创建备份文件夹，因此会有警告
  - 同样由于ftp命令支持语句较少，因此没有上传进度条，且ftp上传极易受网络影响
  - 更多的容错处理
@@ -42,7 +41,7 @@ WEB 服务器自动备份脚本 （Shell）
 	//请保证机器安装tar、mysql，以及配置文件设置正确
 	//如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
-	//如果国内clone速度慢可只下载 config.ini 和 backup.sh ，如果网络正确且机器安装wget命令会自动下载上传工具
+	//如果国内clone速度慢可只下载 config.ini 和 backup.sh ，如果网络联通且机器安装wget命令会自动下载上传工具
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
 	chmod a+x backup.sh
