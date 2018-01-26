@@ -488,4 +488,3 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SA
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
-
