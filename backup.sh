@@ -428,7 +428,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
 		else
 			# Check if php command exists
-      php_path=`command -v php`
+			php_path=`command -v php`
 			if ! [ -x "${php_path}" ]; then
 				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You may not install the php.Skip upload to BaiDuYun." | tee "${SAVE_LOG_DIR}/${log_name}"
 			else
