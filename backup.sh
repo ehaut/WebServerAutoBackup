@@ -387,8 +387,8 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
-					${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
-					${upx_path} rm /${UPX_DIR}/${upx_delete_log_list}
+					${upx_path} rm /${UPX_DIR}/save/${upx_delete_bak_list}
+					${upx_path} rm /${UPX_DIR}/log/${upx_delete_log_list}
 					echo "---------------------------------------------------------------------------"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee "${SAVE_LOG_DIR}/${log_name}"
 				fi
