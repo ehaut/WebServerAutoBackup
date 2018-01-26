@@ -33,7 +33,6 @@ WEB 服务器自动备份脚本 （Shell）
  - 由于无法在ftp里写判断语句，所以使用ftp每次强制创建备份文件夹，因此会有警告
  - 同样由于ftp命令支持语句较少，因此没有上传进度条，且ftp上传极易受网络影响
  - 更多的容错处理
- - 在日志没有进行完就上传了到云空间
 
 打包下载：https://github.com/CHN-STUDENT/WebServerAutoBackup/archive/master.zip
 

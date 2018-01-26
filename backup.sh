@@ -258,12 +258,7 @@ if [ "${DAY}" != "0" ];then
 		for files_name in ${files_list}
 		do
 			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
-			echo "${qiniu_delete_prefix}/save/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
-		done
-		for logs_name in ${logs_list}
-		do
-			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_log.txt														 
-			echo "${qiniu_delete_prefix}/log/$(basename ${logs_name})" >> ${TEMP_DIR}/qiniu_delete_log.txt
+			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
@@ -312,8 +307,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "---------------------------------------------------------------------------"
 			echo "--------------------------This is qshell out put:--------------------------"
 			# Start upload to qiniu bucket by qshell
-			${qshell_path} rput ${BUCKET} "${key_prefix}/save/backup.$NOW.tar.gz" ${backup_path}
-			${qshell_path} rput ${BUCKET} "${key_prefix}/log/${log_name}"  ${log_path}
+			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.tar.gz" ${backup_path}
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your qiniu bucket,then do. 
@@ -322,7 +316,6 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
 					${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_bak.txt
-					${qshell_path} batchdelete -force ${BUCKET} ${TEMP_DIR}/qiniu_delete_log.txt
 					echo "---------------------------------------------------------------------------"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Qiniu file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				fi
@@ -369,26 +362,20 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			${upx_path} login ${BUCKET} ${UPX_UESR} ${UPX_PASSWD}
 			# Create the folder
 			${upx_path} mkdir /${UPX_DIR}
-			${upx_path} mkdir /${UPX_DIR}/save
-			${upx_path} mkdir /${UPX_DIR}/log
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
-			${upx_path} cd /${UPX_DIR}/save
-			${upx_path} put ${backup_path} "/${UPX_DIR}/save/backup.$NOW.tar.gz" 
-			${upx_path} cd /${UPX_DIR}/log
-			${upx_path} put ${log_path} "/${UPX_DIR}/log/${log_name}"  
+			${upx_path} cd /${UPX_DIR}
+			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.tar.gz" 
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your upaiyun bucket,then do. 
 			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
-					upx_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
-					${upx_path} rm /${UPX_DIR}/save/${upx_delete_bak_list}
-					${upx_path} rm /${UPX_DIR}/log/${upx_delete_log_list}
+					${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
 					echo "---------------------------------------------------------------------------"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				fi
@@ -420,9 +407,9 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					ftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
-					ftp_delete_log_list="$(cat ${TEMP_DIR}/ftp_delete_log.txt | sed ':label;N;s/\n/ /;b label')"
 				fi
 			fi
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to ftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			echo "----------------------------This is ftp out put:---------------------------"
 			# Connect to ftp server
@@ -431,23 +418,14 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			user ${FTP_UESR} ${FTP_PASSWD}
 			binary  
 			mkdir "${FTP_DIR}" 
-			mkdir "/${FTP_DIR}/save" 
-			mkdir "/${FTP_DIR}/log" 
 			prompt  
-			put ${backup_path} "${FTP_DIR}/save/backup.$NOW.tar.gz"
-			put ${log_path} "${FTP_DIR}/log/${log_name}"
-			cd "./${FTP_DIR}/save"
-			lcd ${SAVE_DIR} 
-			mdelete ${ftp_delete_bak_list}
-			cd ~
-			cd "/${FTP_DIR}/log"
-			lcd ${SAVE_LOG_DIR} 
-			mdelete ${ftp_delete_log_list}					 
+			put ${backup_path} "${FTP_DIR}/backup.$NOW.tar.gz"
+			mdelete ${ftp_delete_bak_list}		 
 			close  
 			bye  
 EOF
 			echo -e "\n---------------------------------------------------------------------------"
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Ftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 	fi
 fi
