@@ -14,10 +14,14 @@ Input x26276nb as the user code if asked.在文本框中输入input后面的一�
 After granting access to the application, come back here and press Enter to continue. 在获得权限之后再返回这里，按回车继续
 ```
 用浏览器打开 [https://openapi.baidu.com/device](https://openapi.baidu.com/device "https://openapi.baidu.com/device")，登陆百度云账号后是这样的：
+
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/2-1.png)
+
 输入上面的字符串
+
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/3-1.png)
 完成授权后回到命令行，按回车继续
+
 ```shell
 Access Granted. Your Storage Status: 675.05G/2057.00G (32.82%)
 Enjoy!
@@ -28,4 +32,5 @@ File /apps/bpcs_uploader/backup/backup.20180126144743.tar.gz uploaded.
 Size:1.051K MD5 Sum:390d60291afd9a74a2b613a92e073286
 ```
 上传备份文件成功，请到你的百度云根目录/我的应用数据（apps）/bpcs_uploader/你设置的百度云保存文件夹/ 下查看是否上传成功
+
 ![](https://cdn.sunriseydy.top/wp-content/uploads/2018/01/4-1.png)
