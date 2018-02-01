@@ -239,8 +239,8 @@ do
 done
 backup_path="${SAVE_DIR}/backup.$NOW.tar.gz"
 log_path="${SAVE_LOG_DIR}/${log_name}"
-tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_QSHELL_CONFIG
@@ -471,6 +471,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			binary  
 			mkdir "${FTP_DIR}" 
 			prompt  
+			cd ${FTP_DIR}
 			put ${backup_path} "${FTP_DIR}/backup.$NOW.tar.gz"
 			mdelete ${ftp_delete_bak_list}		 
 			close  
