@@ -312,7 +312,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your qiniu bucket,then do. 
-			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" -a -f "${TEMP_DIR}/qiniu_delete_log.txt" ];then    
+			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" ];then    
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
@@ -371,7 +371,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your upaiyun bucket,then do. 
-			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -456,7 +456,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			ftp_delete_bak_list=""
 			ftp_delete_log_list=""
 			# Make delete list for ftp
-			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" -a -f "${TEMP_DIR}/ftp_delete_log.txt" ];then  
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					ftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 				fi
