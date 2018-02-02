@@ -471,7 +471,6 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			binary  
 			mkdir "${FTP_DIR}" 
 			prompt  
-			cd ${FTP_DIR}
 			put ${backup_path} "${FTP_DIR}/backup.$NOW.tar.gz"
 			mdelete ${ftp_delete_bak_list}		 
 			close  
