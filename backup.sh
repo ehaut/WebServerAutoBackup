@@ -264,7 +264,7 @@ if [ "${DAY}" != "0" ];then
 		do
 			echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
 			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
-			echo "${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
