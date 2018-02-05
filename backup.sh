@@ -245,6 +245,8 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE
 # Start clean backup and logs files based your set
 cfg_section_QSHELL_CONFIG
 qiniu_delete_prefix="${key_prefix}"
+cfg_section_FTP_CONFIG
+ftp_delete_prefix="${FTP_DIR}"
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -258,7 +260,7 @@ if [ "${DAY}" != "0" ];then
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
-			echo "$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
+			echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
 			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 		done
 	# Start clean
@@ -376,7 +378,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
-					${upx_path} rm /${UPX_DIR}/${upx_delete_bak_list}
+					${upx_path} rm ${upx_delete_bak_list}
 					echo "---------------------------------------------------------------------------"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upaiyun file cleanup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 				fi
@@ -454,7 +456,6 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set ftp config to upload to ftp.Skip to upload to ftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		else
 			ftp_delete_bak_list=""
-			ftp_delete_log_list=""
 			# Make delete list for ftp
 			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
@@ -471,7 +472,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			binary  
 			mkdir "${FTP_DIR}" 
 			prompt  
-			put ${backup_path} "${FTP_DIR}/backup.$NOW.tar.gz"
+			put ${backup_path} "/${FTP_DIR}/backup.$NOW.tar.gz"
 			mdelete ${ftp_delete_bak_list}		 
 			close  
 			bye  
