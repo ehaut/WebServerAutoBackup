@@ -267,8 +267,8 @@ if [ "${DAY}" != "0" ];then
 			echo "${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 		done
 	# Start clean
-	#find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
-	#find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
+	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
+	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check OS type
