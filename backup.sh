@@ -247,6 +247,8 @@ cfg_section_QSHELL_CONFIG
 qiniu_delete_prefix="${key_prefix}"
 cfg_section_FTP_CONFIG
 ftp_delete_prefix="${FTP_DIR}"
+cfg_section_UPX_CONFIG
+upx_delete_prefix="${UPX_DIR}"
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -262,10 +264,11 @@ if [ "${DAY}" != "0" ];then
 		do
 			echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
 			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
+			echo "${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 		done
 	# Start clean
-	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
-	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
+	#find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
+	#find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check OS type
@@ -375,7 +378,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			# If you set auto delete from your upaiyun bucket,then do. 
 			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-					upx_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+					upx_delete_bak_list="$(cat ${TEMP_DIR}/upai_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
 					${upx_path} rm ${upx_delete_bak_list}
