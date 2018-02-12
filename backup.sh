@@ -434,11 +434,26 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 				fi
 			fi
 		fi
-	else
-		coscmd_path=`command -v coscmd`
-		# Check out whether coscmd has been configed.
-		coscmd_config_file="/root/.cos.conf"
-		while ! [ -f "${coscmd_config_file}"  ]
+	done
+	#coscmd_path=`command -v coscmd`
+	# Check out whether coscmd has been configed.
+	coscmd_config_file="/root/.cos.conf"
+	while ! [ -f "${coscmd_config_file}"  ]
+	do
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to COS, you must config the coscmd.Next to config it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start config coscmd." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		${coscmd_path} config -a ${SECRET_ID} -s ${SECRET_KEY} -b ${BUCKET} -r ${REGION}
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Config coscmd successful." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	done
+	# Start upload
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${COS_UPLOAD_DIR}/backup.$NOW.tar.gz | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload to COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+
+	# If you set auto delete,then do that below
+	if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files from COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		for files_name in ${files_list}
 		do
 			${coscmd_path} delete -f ${COS_UPLOAD_DIR}/$(basename ${files_name}) | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		done
