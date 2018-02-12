@@ -1,6 +1,8 @@
 #!/bin/bash
 #Read the environment configuration
 source /etc/profile
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export PATH
 export TERM=${TERM:-dumb}
 #-----------------------------			  
 # WebServerAutoBackup Script		  
@@ -394,6 +396,68 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		else
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: Can not find upaiyun.Skip to upload to upaiyun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
+	fi
+fi
+# If you set auto upload to your COS,then do that below.
+cfg_section_COS_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check out whether coscmd exists
+	coscmd_path=`command -v coscmd`
+	while ! [ -x "${coscmd_path}" ]; do
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to COS,you must install coscmd." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Begin to install coscmd." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		# Check out whether python exists
+		python_path=`command -v python`
+		if ! [ -x "${python_path}" ]; then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To install coscmd,you must install python 2.7" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			break
+		else
+			# Check out whether python version equals 2.7.
+			V1=2
+			V2=7
+			U_V1=`${python_path} -V 2>&1|awk '{print $2}'|awk -F '.' '{print $1}'`
+			U_V2=`${python_path} -V 2>&1|awk '{print $2}'|awk -F '.' '{print $2}'`
+			if  ! [[ "${U_V1}" = "2" && "${U_V2}" = "7" ]];then
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must install python 2.7,but your python version is ${U_V1}.${U_V2}." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				break
+			else
+				# Check out whether pip installed
+				pip_path=`command -v pip`
+				if ! [ -x "${pip_path}" ]; then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To install coscmd,you must install pip" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					break
+				else
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Begin to install coscmd by pip" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					${pip_path} install coscmd | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Install coscmd by pip finished" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					coscmd_path=`command -v coscmd`
+				fi
+			fi
+		fi
+	done
+	#coscmd_path=`command -v coscmd`
+	# Check out whether coscmd has been configed.
+	coscmd_config_file="/root/.cos.conf"
+	while ! [ -f "${coscmd_config_file}"  ]
+	do
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to COS, you must config the coscmd.Next to config it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start config coscmd." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		${coscmd_path} config -a ${SECRET_ID} -s ${SECRET_KEY} -b ${BUCKET} -r ${REGION}
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Config coscmd successful." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	done
+	# Start upload
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${COS_UPLOAD_DIR}/backup.$NOW.tar.gz | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload to COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+
+	# If you set auto delete,then do that below
+	if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files from COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		for files_name in ${files_list}
+		do
+			${coscmd_path} delete -f ${COS_UPLOAD_DIR}/$(basename ${files_name}) | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		done
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files from COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
 # If you set auto upload to your BaiDuYun,then do that below.
