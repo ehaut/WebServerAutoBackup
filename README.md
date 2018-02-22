@@ -1,6 +1,6 @@
 # WebServerAutoBackup
 
-This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,BaiDuCloud,ftp
+This is a script that automatically backs up your site and database to local or to Qiniu,UpaiYun,TencentCOS,BaiDuCloud,ftp
 
 ### WEB 服务器自动备份脚本 （Shell）  
 仅在CentOS 6 x64 && CentOS 7 x64 && Ubuntu 16.04 x64 测试通过
@@ -13,6 +13,7 @@ This is a script that automatically backs up your site and database to local or 
  - 自动判断机器类型，下载相应的云上传工具
  - 自动将备份文件上传到七牛云并和本地同步删除
  - 自动将备份文件上传到又拍云并和本地同步删除
+ - 自动将备份文件上传到腾讯云对象存储并和本地同步删除
  - 自动将备份文件上传到百度云并和本地同步删除
  - 自动将备份文件上传到ftp服务器并和本地同步删除
 
@@ -25,6 +26,7 @@ This is a script that automatically backs up your site and database to local or 
 - `tar`压缩备份
 - 判断是否存在七牛官方`qshell`,又拍官方`upx`,如果没有使用`wget`下载，
 - 下载好调用`qshell`上传七牛云或者`upx`又拍云
+- 判断是否安装腾讯云对象存储命令行工具`coscmd`,如果没有则通过`pip`安装，调用`coscmd`上传腾讯云对象存储
 - 调用`bpcs_uploader` 上传百度云(请保证安装`php`和`curl`)
 - 调用`ftp`上传ftp
 - 备份日志通过`echo`和`tee`同时显示屏幕和输出到文件
@@ -61,6 +63,7 @@ This is a script that automatically backs up your site and database to local or 
 - 如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
 - 使用百度云上传需要安装php和curl
 - 注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
+- 若使用`coscmd`,需要`python`且版本为2.7
 
 bpcs_uploader工具使用说明：[bpcs_uploader/README.md](https://github.com/CHN-STUDENT/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
 
@@ -81,3 +84,7 @@ bpcs_uploader工具使用说明：[bpcs_uploader/README.md](https://github.com/C
 - 又拍官方Shell工具 `upx`
 
 	Github：https://github.com/polym/upx
+
+- 腾讯云对象存储命令行工具`coscmd`
+
+	Github: https://github.com/tencentyun/coscmd
