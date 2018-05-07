@@ -33,12 +33,18 @@ It may take some time,please wait...
 basepath=$(cd `dirname $0`; pwd)
 # Set ini file
 INI_FILE="${1:-config.ini}"
+##############################################################
 # Set bash ini parser
 # The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
+# This project use GPL V3 LICENSE,so we need to follow it.
+# I integrated it in this shell to parse the user config file.
 # Latest update:2018.1.24
+# We have to show what us change by commits.
+##############################################################
 PREFIX="cfg_section_"
 
 function debug {
+# We do not need debug and it not work on our script,so i committed it.
 #   if  ! [ -v "BASH_INI_PARSER_DEBUG" ]
 #   then 
       #abort debug
