@@ -19,6 +19,12 @@ This is a script that automatically backs up your site and database to local or 
 
 ## 将来会实现的功能：
  - 兼容更多的linux发行版
+ - 添加 SFTP 同步支持
+ - 判断临时目录和备份目录是否满足备份大小
+ - 添加更多云存储平台
+ - 改进备份过程等
+ 
+ **欢迎给我们提建议！**
  
 ## 原理：
 - 通过ini解析引擎`bash-ini-parser`解析用户配置文件`config.ini`
@@ -50,6 +56,8 @@ This is a script that automatically backs up your site and database to local or 
 	vi config.ini //修改配置文件内的网站、数据库等参数
 	chmod a+x backup.sh
 	./backup.sh
+
+**注意：请勿将临时目录设置成根`/`等重要目录，不然可能会造成系统及重要数据丢失的情况！！！这些目录也尽量不要设置到移动硬盘上，防止移动断电等意外情况。**
 
 ### 添加计划任务，每天凌晨两点自动备份
     
