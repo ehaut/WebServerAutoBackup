@@ -38,7 +38,7 @@ INI_FILE="${1:-config.ini}"
 # The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
 # This project use GPL V3 LICENSE,so we need to follow it.
 # I integrated it in this shell to parse the user config file.
-# Latest update:2018.1.24
+# Latest update:2018.5.26
 # We have to show what us change by commits.
 ##############################################################
 PREFIX="cfg_section_"
@@ -111,6 +111,55 @@ function cfg_parser {
    return $EVAL_STATUS
 }
 
+function cfg_writer {
+   SECTION=$1
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   if [ -z "$SECTION" ] 
+   then
+      fun="$(declare -F)"
+   else
+      fun="$(declare -F $PREFIX$SECTION)"
+      if [ -z "$fun" ]
+      then
+         echo "section $SECTION not found" 1>&2
+         exit 1
+      fi
+   fi
+   fun="${fun//declare -f/}"
+   for f in $fun; do
+      [ "${f#$PREFIX}" == "${f}" ] && continue
+      item="$(declare -f ${f})"
+      item="${item##*\{}" # remove function definition
+      item="${item##*FUNCNAME*$PREFIX\};}" # remove clear section
+      item="${item/FUNCNAME\/#$PREFIX;}" # remove line
+      item="${item/\}}"  # remove function close
+      item="${item%)*}" # remove everything after parenthesis
+      item="${item});" # add close parenthesis
+      vars=""
+      while [ "$item" != "" ]
+      do
+         newvar="${item%%=*}" # get item name
+         vars="$vars$newvar" # add name to collection
+         item="${item#*;}" # remove readed line
+      done
+      vars=$(echo "$vars" | sort -u) # remove duplication
+      eval $f
+      echo "[${f#$PREFIX}]" # output section
+      for var in $vars; do
+         eval 'local length=${#'$var'[*]}' # test if var is an array
+         if [ $length == 1 ]
+         then
+            echo $var=\"${!var}\" #output var
+         else 
+            echo ";$var is an array" # add comment denoting var is an array
+            eval 'echo $var=\"${'$var'[*]}\"' # output array var
+         fi
+      done
+   done
+   IFS="$OLDIFS"
+}
+
 function cfg_unset {
    SECTION=$1
    OLDIFS="$IFS"
@@ -122,7 +171,7 @@ function cfg_unset {
       fun="$(declare -F $PREFIX$SECTION)"
       if [ -z "$fun" ]
       then
-         echo "section $SECTION not found" >2
+         echo "section $SECTION not found" 1>&2
          return
       fi
    fi
@@ -160,7 +209,7 @@ function cfg_clear {
       fun="$(declare -F $PREFIX$SECTION)"
       if [ -z "$fun" ]
       then
-         echo "section $SECTION not found" >2
+         echo "section $SECTION not found" 1>&2
          exit 1
       fi
    fi
@@ -170,6 +219,30 @@ function cfg_clear {
       unset -f ${f}
    done
    IFS="$OLDIFS"
+}
+
+function cfg_update {
+   SECTION=$1
+   VAR=$2
+   OLDIFS="$IFS"
+   IFS=' '$'\n'
+   fun="$(declare -F $PREFIX$SECTION)"
+   if [ -z "$fun" ]
+   then
+      echo "section $SECTION not found" 1>&2
+      exit 1
+   fi
+   fun="${fun//declare -f/}"
+   item="$(declare -f ${fun})"
+   #item="${item##* $VAR=*}" # remove var declaration
+   item="${item/\}}"  # remove function close
+   item="${item}
+    $VAR=(${!VAR})
+   "
+   item="${item}
+   }" # close function again
+
+   eval "function $item"
 }
 
 #Test harness
@@ -255,7 +328,7 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG
 if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
     zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
 else
-    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+    zip -q -r -P ${COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
 fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
