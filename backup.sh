@@ -111,54 +111,7 @@ function cfg_parser {
    return $EVAL_STATUS
 }
 
-function cfg_writer {
-   SECTION=$1
-   OLDIFS="$IFS"
-   IFS=' '$'\n'
-   if [ -z "$SECTION" ] 
-   then
-      fun="$(declare -F)"
-   else
-      fun="$(declare -F $PREFIX$SECTION)"
-      if [ -z "$fun" ]
-      then
-         echo "section $SECTION not found" 1>&2
-         exit 1
-      fi
-   fi
-   fun="${fun//declare -f/}"
-   for f in $fun; do
-      [ "${f#$PREFIX}" == "${f}" ] && continue
-      item="$(declare -f ${f})"
-      item="${item##*\{}" # remove function definition
-      item="${item##*FUNCNAME*$PREFIX\};}" # remove clear section
-      item="${item/FUNCNAME\/#$PREFIX;}" # remove line
-      item="${item/\}}"  # remove function close
-      item="${item%)*}" # remove everything after parenthesis
-      item="${item});" # add close parenthesis
-      vars=""
-      while [ "$item" != "" ]
-      do
-         newvar="${item%%=*}" # get item name
-         vars="$vars$newvar" # add name to collection
-         item="${item#*;}" # remove readed line
-      done
-      vars=$(echo "$vars" | sort -u) # remove duplication
-      eval $f
-      echo "[${f#$PREFIX}]" # output section
-      for var in $vars; do
-         eval 'local length=${#'$var'[*]}' # test if var is an array
-         if [ $length == 1 ]
-         then
-            echo $var=\"${!var}\" #output var
-         else 
-            echo ";$var is an array" # add comment denoting var is an array
-            eval 'echo $var=\"${'$var'[*]}\"' # output array var
-         fi
-      done
-   done
-   IFS="$OLDIFS"
-}
+# we do not need the cfg_writer function, so i delete it.
 
 function cfg_unset {
    SECTION=$1
@@ -221,29 +174,7 @@ function cfg_clear {
    IFS="$OLDIFS"
 }
 
-function cfg_update {
-   SECTION=$1
-   VAR=$2
-   OLDIFS="$IFS"
-   IFS=' '$'\n'
-   fun="$(declare -F $PREFIX$SECTION)"
-   if [ -z "$fun" ]
-   then
-      echo "section $SECTION not found" 1>&2
-      exit 1
-   fi
-   fun="${fun//declare -f/}"
-   item="$(declare -f ${fun})"
-   #item="${item##* $VAR=*}" # remove var declaration
-   item="${item/\}}"  # remove function close
-   item="${item}
-    $VAR=(${!VAR})
-   "
-   item="${item}
-   }" # close function again
-
-   eval "function $item"
-}
+# We do not need the cfg_update function,so i delete it.
 
 #Test harness
 if [ $# != 0 ]
@@ -328,7 +259,7 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG
 if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
     zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
 else
-    zip -q -r -P ${COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
 fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
