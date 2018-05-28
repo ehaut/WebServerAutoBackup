@@ -17,7 +17,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.5 Beta                 #
+#                2018.1  V0.0.6 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -199,8 +199,8 @@ if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check if tar command exists
-if ! [ -x "$(command -v tar)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the tar.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+if ! [ -x "$(command -v zip)" ]; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the zip.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
@@ -245,10 +245,18 @@ for www_dir in ${WWWROOT_DIR[@]}
 do
 	cp -r ${www_dir} .
 done
-backup_path="${SAVE_DIR}/backup.$NOW.tar.gz"
+# set backup path and log path
+backup_path="${SAVE_DIR}/backup.$NOW.zip"
 log_path="${SAVE_LOG_DIR}/${log_name}"
+# get the compress password
+cfg_section_COMPRESS_CONFIG
+ZIP_COMPRESS_PASSWD=${COMPRESS_PASSWD}
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
+if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
+    zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
+else
+    zip -q -r -P ${COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_QSHELL_CONFIG
@@ -266,7 +274,7 @@ fi
 if [ "${DAY}" != "0" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	# Create delete list for qshell
-		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz"`
+		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.zip"`
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
@@ -275,7 +283,7 @@ if [ "${DAY}" != "0" ];then
 			echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 		done
 	# Start clean
-	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
+	find ${SAVE_DIR} -mtime +${DAY} -name "*.zip" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
@@ -321,7 +329,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "---------------------------------------------------------------------------"
 			echo "--------------------------This is qshell out put:--------------------------"
 			# Start upload to qiniu bucket by qshell
-			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.tar.gz" ${backup_path}
+			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.zip" ${backup_path}
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your qiniu bucket,then do. 
@@ -380,7 +388,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			${upx_path} cd /${UPX_DIR}
-			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.tar.gz" 
+			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.zip" 
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your upaiyun bucket,then do. 
@@ -453,7 +461,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	done
 	# Start upload
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${COS_UPLOAD_DIR}/backup.$NOW.tar.gz | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.zip ${COS_UPLOAD_DIR}/backup.$NOW.zip | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload to COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 
 	# If you set auto delete,then do that below
@@ -501,7 +509,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					done
 					# Start upload to BaiDuYun 
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
+					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.zip ${BDY_DIR}/backup.$NOW.zip
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					# If you set auto delete from BaiDuYun,then do. 
 					if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
@@ -545,7 +553,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			binary  
 			mkdir "${FTP_DIR}" 
 			prompt  
-			put ${backup_path} "/${FTP_DIR}/backup.$NOW.tar.gz"
+			put ${backup_path} "/${FTP_DIR}/backup.$NOW.zip"
 			mdelete ${ftp_delete_bak_list}		 
 			close  
 			bye  
