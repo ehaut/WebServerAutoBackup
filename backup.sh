@@ -255,7 +255,7 @@ echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG
 if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
     zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
 else
-    zip -q -r -P ${COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
 fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
