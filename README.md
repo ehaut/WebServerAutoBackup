@@ -29,7 +29,7 @@ This is a script that automatically backs up your site and database to local or 
 ## 原理：
 - 通过ini解析引擎`bash-ini-parser`解析用户配置文件`config.ini`
 - 通过`mysqldump`导出数据库
-- `tar`压缩备份
+- `zip`压缩备份
 - 判断是否存在七牛官方`qshell`,又拍官方`upx`,如果没有使用`wget`下载，
 - 下载好调用`qshell`上传七牛云或者`upx`又拍云
 - 判断是否安装腾讯云对象存储命令行工具`coscmd`,如果没有则通过`pip`安装，调用`coscmd`上传腾讯云对象存储
@@ -39,7 +39,7 @@ This is a script that automatically backs up your site and database to local or 
 
 ## 不足：
  - 由于能力原因可能存在很多bug,欢迎提交issue指出
- - 由于tar绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除
+ - 由于绝对路径压缩可能存在问题，故将所有备份文件放在一个临时文件夹中，操作完自动清除
  - 无法忽略mysql-5.6及以上密码传递造成安全警告
  - 由于无法在ftp里写判断语句，所以使用ftp每次强制创建备份文件夹，因此会有警告
  - 同样由于ftp命令支持语句较少，因此没有上传进度条，且ftp上传极易受网络影响
@@ -49,8 +49,8 @@ This is a script that automatically backs up your site and database to local or 
 
 ### 使用方法：
 	
-	yum -y install wget tar ftp curl #for CentOS/Redhat
-	# apt-get -y install wget tar ftp curl #for Debian/Ubuntu
+	yum -y install wget zip ftp curl #for CentOS/Redhat
+	# apt-get -y install wget zip ftp curl #for Debian/Ubuntu
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
@@ -67,7 +67,7 @@ This is a script that automatically backs up your site and database to local or 
 
 ## 注意事项：
 - 如果国内clone速度慢，可以只下载 config.ini 和 backup.sh 上传即可，机器安装好wget命令且网络通畅下程序会自动下载相应的上传工具
-- 使用前请保证机器安装tar、mysql，以及配置文件设置正确
+- 使用前请保证机器安装zip、mysql，以及配置文件设置正确
 - 如果要使用ftp上传请确保ftp服务器防火墙设置放行，权限正确，本机安装ftp命令
 - 使用百度云上传需要安装php和curl
 - 注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
