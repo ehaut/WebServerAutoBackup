@@ -17,7 +17,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.6 Beta                 #
+#                2018.1  V0.0.7 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -223,12 +223,32 @@ if ! [ -d "${TEMP_DIR}"  ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	mkdir -p "${TEMP_DIR}" 
 fi 
+# Add the check backup space function <https://github.com/CHN-STUDENT/WebServerAutoBackup/issues/10>
+# Start to check wwwroot size
+# Base on <https://stackoverflow.com/questions/5920333/how-to-check-size-of-a-file>
+wwwroot_size=0
+for www_dir in ${WWWROOT_DIR[@]}
+do
+	wwwroot_size=`expr $(du -sb ${www_dir} | awk '{ print $1 }') + ${wwwroot_size}`
+done
+# Start to check temp folder and backup folder free space size
+# Base on <https://unix.stackexchange.com/questions/6008/get-the-free-space-available-in-current-directory-in-bash>
+cfg_section_TEMP_CONFIG
+temp_folder_space=`df -P ${TEMP_DIR} | tail -1 | awk '{print $4}'`
+if [ ${temp_folder_space} -lt ${wwwroot_size} ];then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder is too small.Can not to start backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	exit 1
+fi
+cfg_section_SAVE_CONFIG
+backup_folder_space=`df -P ${SAVE_DIR} | tail -1 | awk '{print $4}'`
+if [ ${backup_folder_space} -lt ${wwwroot_size} ];then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The backup folder is too small.Can not to start backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	exit 1
+fi
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
 cfg_section_MYSQL_CONFIG
-cd ${TEMP_DIR}
-rm -rf ${TEMP_DIR}/*
 # Check if mysqldump command exists
 if ! [ -x "$(command -v mysqldump)" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -244,6 +264,8 @@ else
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
+cd ${TEMP_DIR}
+rm -rf ${TEMP_DIR}/*
 # Start backup wwwroot
 for www_dir in ${WWWROOT_DIR[@]}
 do
