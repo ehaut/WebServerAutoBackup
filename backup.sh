@@ -589,6 +589,52 @@ EOF
 		fi
 	fi
 fi
+# If you set auto upload to your remote server,then do.
+cfg_section_SFTP_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# check if ssh command exists
+	if ! [ -x "$(command -v ssh)" ]; then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ssh.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	else
+		# check if set auth method exists
+		if ! [[ "${AUTH_METHOD}" = "password" || "${AUTH_METHOD}" = "certificate" ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You have to set the correct auth method.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		else
+			# if the auth_method is password,then do.
+			if [ "${AUTH_METHOD}" = "password" ];then
+				# Check if sftp config exists
+				if  [[ "${REMOTE_IP}" = "" || "${REMOTE_PORT}" = "" || "${REMOTE_USER}" = "" || "${REMOTE_PASSWD}" = "" || "${REMOTE_DIR}" = "" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set sftp config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				else
+					# check if sshpass command exists
+					if ! [ -x "$(command -v sshpass)" ]; then
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the sshpass.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					else
+						# connect to the remote server by ssh with password
+						# just todo list
+					fi
+				fi
+			# if the auth_method is certificate,then do.
+			elif [ "${AUTH_METHOD}" = "certificate" ];then
+				# Check if sftp config exists
+				if  [[ "${REMOTE_IP}" = "" || "${REMOTE_PORT}" = "" || "${REMOTE_USER}" = "" || "${REMOTE_CERT}" = "" || "${REMOTE_DIR}" = "" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set sftp config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				else
+					cert_path=${REMOTE_CERT}
+					# Check if auth_certitficate exists
+					if [ -f "${cert_path}" ];then 
+						# set its permission
+						chmod 600 ${cert_path}
+						# connect to the remote server by ssh with certitficate
+						# just todo list
+					else
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set correct auth certitificate config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					fi
+				fi
+			fi
+		fi
+	fi
+fi
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
