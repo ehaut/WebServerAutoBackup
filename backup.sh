@@ -245,6 +245,9 @@ if [ ${backup_folder_space} -lt ${wwwroot_size} ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The backup folder is too small.Can not to start backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
+# Clean the temp dir
+cd ${TEMP_DIR}
+rm -rf ${TEMP_DIR}/*
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
@@ -264,8 +267,6 @@ else
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
-cd ${TEMP_DIR}
-rm -rf ${TEMP_DIR}/*
 # Start backup wwwroot
 for www_dir in ${WWWROOT_DIR[@]}
 do
