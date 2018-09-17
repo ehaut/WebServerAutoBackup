@@ -1,9 +1,6 @@
 #!/bin/bash
 #Read the environment configuration
-source /etc/profile
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
-export PATH
-export TERM=${TERM:-dumb}
+
 #-----------------------------			  
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me> && sunriseydy <i@mail.sunriseydy.top>
@@ -17,7 +14,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.7 Beta                 #
+#                2018.9  V0.1.0 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -611,8 +608,42 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					if ! [ -x "$(command -v sshpass)" ]; then
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the sshpass.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					else
+						sftp_delete_bak_list=""
+							# Make delete list for sftp
+							if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  # using the ftp delete list 
+								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+								fi
+							fi
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						echo "---------------------------------------------------------------------------"
+						echo "----------------------------This is sftp out put:--------------------------"
 						# connect to the remote server by ssh with password
-						# just todo list
+						# check if remote directory exists by ssh with password
+						if ! sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} -q [[ -d ${REMOTE_DIR} ]] ;then
+						# if remote directory dose not exist,so create it,then upload backup file and delete old file
+							echo "The remote directory exists,Create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+							sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "mkdir -p ${REMOTE_DIR}"
+							sshpass -p ${REMOTE_PASSWD} sftp -o StrictHostKeyChecking=no -P ${REMOTE_PORT}  -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPPASSWORD0
+								cd ${REMOTE_DIR}
+								put ${backup_path}
+								exit
+SFTPPASSWORD0
+						else	
+						# if remote directory exists,we do not need to create it,then upload backup file and delete old file
+						sshpass -p ${REMOTE_PASSWD} sftp -o StrictHostKeyChecking=no -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPPASSWORD1
+							cd ${REMOTE_DIR}
+							put ${backup_path}
+							exit
+SFTPPASSWORD1
+						fi
+						echo -e "\n---------------------------------------------------------------------------"
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						if ! [[ sftp_delete_bak_list = "" ]]; then
+						# Delete the remote old files if the list is not null
+							sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
+						fi
+			            echo "[$(date +"%Y-%m-%d %H:%M:%S")] Sftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					fi
 				fi
 			# if the auth_method is certificate,then do.
@@ -626,8 +657,42 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					if [ -f "${cert_path}" ];then 
 						# set its permission
 						chmod 600 ${cert_path}
+						sftp_delete_bak_list=""
+							# Make delete list for sftp
+							if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  # using the ftp delete list 
+								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+								fi
+							fi
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						echo "---------------------------------------------------------------------------"
+						echo "----------------------------This is sftp out put:--------------------------"
 						# connect to the remote server by ssh with certitficate
-						# just todo list
+						# check if remote directory exists by ssh with certitficate
+						if ! ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} -q [[ -d ${REMOTE_DIR} ]] ;then
+						# if remote directory dose not exist,so create it,then upload backup file and delete old file
+							echo "The remote directory exists,Create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+							ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "mkdir -p ${REMOTE_DIR}"
+							sftp -o StrictHostKeyChecking=no -i ${cert_path}  -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPCERT0
+								cd ${REMOTE_DIR}
+								put ${backup_path}
+								exit
+SFTPCERT0
+						else
+						# if remote directory exists,we do not need to create it,then upload backup file and delete old file
+						sftp -o StrictHostKeyChecking=no -i ${cert_path}  -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPCERT1
+							cd ${REMOTE_DIR}
+							put ${backup_path}
+							exit
+SFTPCERT1
+						fi
+						echo -e "\n---------------------------------------------------------------------------"
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						if ! [[ sftp_delete_bak_list = "" ]]; then
+						# Delete the remote old files if the list is not null
+							ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
+						fi
+			            echo "[$(date +"%Y-%m-%d %H:%M:%S")] Sftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					else
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set correct auth certitificate config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					fi
@@ -636,9 +701,10 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		fi
 	fi
 fi
+
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-rm -rf ${TEMP_DIR}/*
+#rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"
