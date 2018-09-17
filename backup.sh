@@ -704,7 +704,7 @@ fi
 
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-#rm -rf ${TEMP_DIR}/*
+rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"

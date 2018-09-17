@@ -16,16 +16,15 @@ This is a script that automatically backs up your site and database to local or 
  - 自动将备份文件上传到腾讯云对象存储并和本地同步删除
  - 自动将备份文件上传到百度云并和本地同步删除
  - 自动将备份文件上传到ftp服务器并和本地同步删除
+ - 自动将备份文件上传到远程服务器并和本地同步删除（通过`SFTP`命令）
 
 ## 将来会实现的功能：
  - 兼容更多的linux发行版
- - 添加 SFTP 同步支持
- - 判断临时目录和备份目录是否满足备份大小
  - 添加更多云存储平台
  - 改进备份过程等
- 
+
  **欢迎给我们提建议！**
- 
+
 ## 原理：
 - 通过ini解析引擎`bash-ini-parser`解析用户配置文件`config.ini`
 - 通过`mysqldump`导出数据库
@@ -36,6 +35,7 @@ This is a script that automatically backs up your site and database to local or 
 - 调用`bpcs_uploader` 上传百度云(请保证安装`php`和`curl`)
 - 调用`ftp`上传ftp
 - 备份日志通过`echo`和`tee`同时显示屏幕和输出到文件
+- 通过`ssh`和`sftp`连接到远程服务器，实现传输文件，`ssh`传递密码通过`sshpass`实现
 
 ## 不足：
  - 由于能力原因可能存在很多bug,欢迎提交issue指出
@@ -48,9 +48,9 @@ This is a script that automatically backs up your site and database to local or 
 打包下载：https://github.com/CHN-STUDENT/WebServerAutoBackup/archive/master.zip
 
 ### 使用方法：
-	
-	yum -y install wget zip ftp curl #for CentOS/Redhat
-	# apt-get -y install wget zip ftp curl #for Debian/Ubuntu
+
+	yum -y install wget zip ftp curl ssh sftp sshpass #for CentOS/Redhat
+	# apt-get -y install wget zip ftp curl ssh sftp sshpass #for Debian/Ubuntu
 	git clone https://github.com/CHN-STUDENT/WebServerAutoBackup.git 
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
@@ -60,7 +60,7 @@ This is a script that automatically backs up your site and database to local or 
 **注意：请勿将临时目录设置成根`/`等重要目录，不然可能会造成系统及重要数据丢失的情况！！！这些目录也尽量不要设置到移动硬盘上，防止移动断电等意外情况。**
 
 ### 添加计划任务，每天凌晨两点自动备份
-    
+
     crontab -e
     0 2 * * * cd /root/WebServerAutoBackup && ./backup.sh > /data/backup/log/backup-cron.log  2>&1 & 
     #请自行修改脚本文件目录和输出日志文件目录
