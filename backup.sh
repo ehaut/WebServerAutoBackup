@@ -289,6 +289,8 @@ cfg_section_FTP_CONFIG
 ftp_delete_prefix="${FTP_DIR}"
 cfg_section_UPX_CONFIG
 upx_delete_prefix="${UPX_DIR}"
+cfg_section_SFTP_CONFIG
+sftp_delete_prefix=${REMOTE_DIR}
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -297,14 +299,23 @@ if [ "${DAY}" = "" ];then
 fi
 if [ "${DAY}" != "0" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	# Create delete list for qshell
 		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.zip"`
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
-			echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
-			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
-			echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			# Create delete list 
+			if ! [[ "${ftp_delete_prefix}"="" ]];then 
+				echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt
+			fi
+			if ! [[ "${qiniu_delete_prefix}"="" ]];then 																	 
+				echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
+			fi
+			if ! [[ "${UPX_DIR}"="" ]];then 	
+				echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			fi
+			if ! [[ "${REMOTE_DIR}"="" ]];then 	
+				echo "/${REMOTE_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
+			fi
 		done
 	# Start clean
 	find ${SAVE_DIR} -mtime +${DAY} -name "*.zip" -exec rm -Rf {} \;
@@ -610,9 +621,9 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					else
 						sftp_delete_bak_list=""
 							# Make delete list for sftp
-							if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  # using the ftp delete list 
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
 								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-									sftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 								fi
 							fi
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -661,7 +672,7 @@ SFTPPASSWORD1
 							# Make delete list for sftp
 							if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  # using the ftp delete list 
 								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
-									sftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 								fi
 							fi
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
