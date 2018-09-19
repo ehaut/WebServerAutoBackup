@@ -304,17 +304,17 @@ if [ "${DAY}" != "0" ];then
 		for files_name in ${files_list}
 		do
 			# Create delete list 
-			if ! [[ "${ftp_delete_prefix}"="" ]];then 
+			if ! [[ "${ftp_delete_prefix}" = "" ]];then 
 				echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt
 			fi
-			if ! [[ "${qiniu_delete_prefix}"="" ]];then 																	 
+			if ! [[ "${qiniu_delete_prefix}" = "" ]];then 																	 
 				echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 			fi
-			if ! [[ "${UPX_DIR}"="" ]];then 	
-				echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			if ! [[ "${upx_delete_prefix}" = "" ]];then 	
+				echo "/${upx_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 			fi
-			if ! [[ "${REMOTE_DIR}"="" ]];then 	
-				echo "/${REMOTE_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
+			if ! [[ "${sftp_delete_prefix}" = "" ]];then 	
+				echo "${sftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
 			fi
 		done
 	# Start clean
@@ -670,7 +670,7 @@ SFTPPASSWORD1
 						chmod 600 ${cert_path}
 						sftp_delete_bak_list=""
 							# Make delete list for sftp
-							if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  # using the ftp delete list 
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
 								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 								fi
