@@ -639,7 +639,7 @@ SFTPPASSWORD1
 						fi
 						echo -e "\n---------------------------------------------------------------------------"
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-						if ! [[ sftp_delete_bak_list = "" ]]; then
+						if ! [[ "${sftp_delete_bak_list}" = ""  ]]; then
 						# Delete the remote old files if the list is not null
 							sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
 						fi
@@ -688,7 +688,7 @@ SFTPCERT1
 						fi
 						echo -e "\n---------------------------------------------------------------------------"
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-						if ! [[ sftp_delete_bak_list = "" ]]; then
+						if ! [[ "${sftp_delete_bak_list}" = "" ]]; then
 						# Delete the remote old files if the list is not null
 							ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
 						fi
