@@ -75,7 +75,7 @@ This is a script that automatically backs up your site and database to local or 
 - 使用百度云上传需要安装php和curl
 - 注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
 - 若使用`coscmd`,需要`python`且版本为2.7
-- 若使用SFTP密码上传功能，由于使用了`sshpass`命令，该命令会记住第一次正确的密码，后期可以将该密码删除为了安全
+- 若使用SFTP密码上传功能，由于使用了`sshpass`命令，该命令会记住第一次正确的密码，后期为了安全可以将该密码删除
 
 bpcs_uploader工具使用说明：[bpcs_uploader/README.md](https://github.com/CHN-STUDENT/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
 
