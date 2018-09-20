@@ -1,9 +1,6 @@
 #!/bin/bash
 #Read the environment configuration
-source /etc/profile
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
-export PATH
-export TERM=${TERM:-dumb}
+
 #-----------------------------			  
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me> && sunriseydy <i@mail.sunriseydy.top>
@@ -17,7 +14,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.1  V0.0.5 Beta                 #
+#                2018.9  V0.1.0 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -38,7 +35,7 @@ INI_FILE="${1:-config.ini}"
 # The bash ini parser by bash-ini-parser <https://github.com/albfan/bash-ini-parser/>
 # This project use GPL V3 LICENSE,so we need to follow it.
 # I integrated it in this shell to parse the user config file.
-# Latest update:2018.1.24
+# Latest update:2018.5.26
 # We have to show what us change by commits.
 ##############################################################
 PREFIX="cfg_section_"
@@ -111,6 +108,8 @@ function cfg_parser {
    return $EVAL_STATUS
 }
 
+# we do not need the cfg_writer function, so i delete it.
+
 function cfg_unset {
    SECTION=$1
    OLDIFS="$IFS"
@@ -122,7 +121,7 @@ function cfg_unset {
       fun="$(declare -F $PREFIX$SECTION)"
       if [ -z "$fun" ]
       then
-         echo "section $SECTION not found" >2
+         echo "section $SECTION not found" 1>&2
          return
       fi
    fi
@@ -160,7 +159,7 @@ function cfg_clear {
       fun="$(declare -F $PREFIX$SECTION)"
       if [ -z "$fun" ]
       then
-         echo "section $SECTION not found" >2
+         echo "section $SECTION not found" 1>&2
          exit 1
       fi
    fi
@@ -171,6 +170,8 @@ function cfg_clear {
    done
    IFS="$OLDIFS"
 }
+
+# We do not need the cfg_update function,so i delete it.
 
 #Test harness
 if [ $# != 0 ]
@@ -199,8 +200,8 @@ if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
 # Check if tar command exists
-if ! [ -x "$(command -v tar)" ]; then
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the tar.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+if ! [ -x "$(command -v zip)" ]; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the zip.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	exit 1
 fi
 # Check if wwwroot folder exists
@@ -219,12 +220,35 @@ if ! [ -d "${TEMP_DIR}"  ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	mkdir -p "${TEMP_DIR}" 
 fi 
+# Add the check backup space function <https://github.com/CHN-STUDENT/WebServerAutoBackup/issues/10>
+# Start to check wwwroot size
+# Base on <https://stackoverflow.com/questions/5920333/how-to-check-size-of-a-file>
+wwwroot_size=0
+for www_dir in ${WWWROOT_DIR[@]}
+do
+	wwwroot_size=`expr $(du -sb ${www_dir} | awk '{ print $1 }') + ${wwwroot_size}`
+done
+# Start to check temp folder and backup folder free space size
+# Base on <https://unix.stackexchange.com/questions/6008/get-the-free-space-available-in-current-directory-in-bash>
+cfg_section_TEMP_CONFIG
+temp_folder_space=`df -P ${TEMP_DIR} | tail -1 | awk '{print $4}'`
+if [ ${temp_folder_space} -lt ${wwwroot_size} ];then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The temp folder is too small.Can not to start backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	exit 1
+fi
+cfg_section_SAVE_CONFIG
+backup_folder_space=`df -P ${SAVE_DIR} | tail -1 | awk '{print $4}'`
+if [ ${backup_folder_space} -lt ${wwwroot_size} ];then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The backup folder is too small.Can not to start backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	exit 1
+fi
+# Clean the temp dir
+cd ${TEMP_DIR}
+rm -rf ${TEMP_DIR}/*
 # Get server time
 NOW=$(date +"%Y%m%d%H%M%S")
 # Start backup mysql
 cfg_section_MYSQL_CONFIG
-cd ${TEMP_DIR}
-rm -rf ${TEMP_DIR}/*
 # Check if mysqldump command exists
 if ! [ -x "$(command -v mysqldump)" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -245,10 +269,18 @@ for www_dir in ${WWWROOT_DIR[@]}
 do
 	cp -r ${www_dir} .
 done
-backup_path="${SAVE_DIR}/backup.$NOW.tar.gz"
+# set backup path and log path
+backup_path="${SAVE_DIR}/backup.$NOW.zip"
 log_path="${SAVE_LOG_DIR}/${log_name}"
+# get the compress password
+cfg_section_COMPRESS_CONFIG
+ZIP_COMPRESS_PASSWD=${COMPRESS_PASSWD}
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-tar -czf${SAVE_DIR}/backup.$NOW.tar.gz * 
+if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
+    zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
+else
+    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
 cfg_section_QSHELL_CONFIG
@@ -257,6 +289,8 @@ cfg_section_FTP_CONFIG
 ftp_delete_prefix="${FTP_DIR}"
 cfg_section_UPX_CONFIG
 upx_delete_prefix="${UPX_DIR}"
+cfg_section_SFTP_CONFIG
+sftp_delete_prefix=${REMOTE_DIR}
 cfg_section_DAY_CONFIG
 if [ "${DAY}" = "" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error:You must set the delete day.Exit." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -265,17 +299,26 @@ if [ "${DAY}" = "" ];then
 fi
 if [ "${DAY}" != "0" ];then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up backup files and logs based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	# Create delete list for qshell
-		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz"`
+		files_list=`find ${SAVE_DIR} -mtime +${DAY} -name "*.zip"`
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
-			echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt																	 
-			echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
-			echo "/${UPX_DIR}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			# Create delete list 
+			if ! [[ "${ftp_delete_prefix}" = "" ]];then 
+				echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt
+			fi
+			if ! [[ "${qiniu_delete_prefix}" = "" ]];then 																	 
+				echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
+			fi
+			if ! [[ "${upx_delete_prefix}" = "" ]];then 	
+				echo "/${upx_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
+			fi
+			if ! [[ "${sftp_delete_prefix}" = "" ]];then 	
+				echo "${sftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
+			fi
 		done
 	# Start clean
-	find ${SAVE_DIR} -mtime +${DAY} -name "*.tar.gz" -exec rm -Rf {} \;
+	find ${SAVE_DIR} -mtime +${DAY} -name "*.zip" -exec rm -Rf {} \;
 	find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log" -exec rm -Rf {} \;
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean up completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 fi
@@ -321,7 +364,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "---------------------------------------------------------------------------"
 			echo "--------------------------This is qshell out put:--------------------------"
 			# Start upload to qiniu bucket by qshell
-			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.tar.gz" ${backup_path}
+			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.zip" ${backup_path}
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your qiniu bucket,then do. 
@@ -380,7 +423,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			${upx_path} cd /${UPX_DIR}
-			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.tar.gz" 
+			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.zip" 
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			# If you set auto delete from your upaiyun bucket,then do. 
@@ -453,7 +496,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	done
 	# Start upload
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to COS." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${COS_UPLOAD_DIR}/backup.$NOW.tar.gz | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	${coscmd_path} upload ${SAVE_DIR}/backup.$NOW.zip ${COS_UPLOAD_DIR}/backup.$NOW.zip | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Upload to COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 
 	# If you set auto delete,then do that below
@@ -501,7 +544,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					done
 					# Start upload to BaiDuYun 
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.tar.gz ${BDY_DIR}/backup.$NOW.tar.gz
+					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.zip ${BDY_DIR}/backup.$NOW.zip
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					# If you set auto delete from BaiDuYun,then do. 
 					if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
@@ -545,7 +588,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			binary  
 			mkdir "${FTP_DIR}" 
 			prompt  
-			put ${backup_path} "/${FTP_DIR}/backup.$NOW.tar.gz"
+			put ${backup_path} "/${FTP_DIR}/backup.$NOW.zip"
 			mdelete ${ftp_delete_bak_list}		 
 			close  
 			bye  
@@ -555,6 +598,121 @@ EOF
 		fi
 	fi
 fi
+# If you set auto upload to your remote server,then do.
+cfg_section_SFTP_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# check if ssh command exists
+	if ! [ -x "$(command -v ssh)" ]; then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ssh.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	else
+		# check if set auth method exists
+		if ! [[ "${AUTH_METHOD}" = "password" || "${AUTH_METHOD}" = "certificate" ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You have to set the correct auth method.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		else
+			# if the auth_method is password,then do.
+			if [ "${AUTH_METHOD}" = "password" ];then
+				# Check if sftp config exists
+				if  [[ "${REMOTE_IP}" = "" || "${REMOTE_PORT}" = "" || "${REMOTE_USER}" = "" || "${REMOTE_PASSWD}" = "" || "${REMOTE_DIR}" = "" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set sftp config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				else
+					# check if sshpass command exists
+					if ! [ -x "$(command -v sshpass)" ]; then
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the sshpass.Skip to upload backup to remote server.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					else
+						sftp_delete_bak_list=""
+							# Make delete list for sftp
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
+								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+								fi
+							fi
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						echo "---------------------------------------------------------------------------"
+						echo "----------------------------This is sftp out put:--------------------------"
+						# connect to the remote server by ssh with password
+						# check if remote directory exists by ssh with password
+						if ! sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} -q [[ -d ${REMOTE_DIR} ]] ;then
+						# if remote directory dose not exist,so create it,then upload backup file and delete old file
+							echo "The remote directory exists,Create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+							sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "mkdir -p ${REMOTE_DIR}"
+							sshpass -p ${REMOTE_PASSWD} sftp -o StrictHostKeyChecking=no -P ${REMOTE_PORT}  -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPPASSWORD0
+								cd ${REMOTE_DIR}
+								put ${backup_path}
+								exit
+SFTPPASSWORD0
+						else	
+						# if remote directory exists,we do not need to create it,then upload backup file and delete old file
+						sshpass -p ${REMOTE_PASSWD} sftp -o StrictHostKeyChecking=no -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPPASSWORD1
+							cd ${REMOTE_DIR}
+							put ${backup_path}
+							exit
+SFTPPASSWORD1
+						fi
+						echo -e "\n---------------------------------------------------------------------------"
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						if ! [[ "${sftp_delete_bak_list}" = ""  ]]; then
+						# Delete the remote old files if the list is not null
+							sshpass -p ${REMOTE_PASSWD} ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
+						fi
+			            echo "[$(date +"%Y-%m-%d %H:%M:%S")] Sftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					fi
+				fi
+			# if the auth_method is certificate,then do.
+			elif [ "${AUTH_METHOD}" = "certificate" ];then
+				# Check if sftp config exists
+				if  [[ "${REMOTE_IP}" = "" || "${REMOTE_PORT}" = "" || "${REMOTE_USER}" = "" || "${REMOTE_CERT}" = "" || "${REMOTE_DIR}" = "" ]];then
+					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set sftp config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				else
+					cert_path=${REMOTE_CERT}
+					# Check if auth_certitficate exists
+					if [ -f "${cert_path}" ];then 
+						# set its permission
+						chmod 600 ${cert_path}
+						sftp_delete_bak_list=""
+							# Make delete list for sftp
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
+								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
+									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
+								fi
+							fi
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start to upload to sftp." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						echo "---------------------------------------------------------------------------"
+						echo "----------------------------This is sftp out put:--------------------------"
+						# connect to the remote server by ssh with certitficate
+						# check if remote directory exists by ssh with certitficate
+						if ! ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} -q [[ -d ${REMOTE_DIR} ]] ;then
+						# if remote directory dose not exist,so create it,then upload backup file and delete old file
+							echo "The remote directory exists,Create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+							ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "mkdir -p ${REMOTE_DIR}"
+							sftp -o StrictHostKeyChecking=no -i ${cert_path}  -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPCERT0
+								cd ${REMOTE_DIR}
+								put ${backup_path}
+								exit
+SFTPCERT0
+						else
+						# if remote directory exists,we do not need to create it,then upload backup file and delete old file
+						sftp -o StrictHostKeyChecking=no -i ${cert_path}  -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPCERT1
+							cd ${REMOTE_DIR}
+							put ${backup_path}
+							exit
+SFTPCERT1
+						fi
+						echo -e "\n---------------------------------------------------------------------------"
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						if ! [[ "${sftp_delete_bak_list}" = "" ]]; then
+						# Delete the remote old files if the list is not null
+							ssh -o StrictHostKeyChecking=no -i ${cert_path} ${REMOTE_USER}@${REMOTE_IP} -p ${REMOTE_PORT} "rm -rf ${sftp_delete_bak_list}"
+						fi
+			            echo "[$(date +"%Y-%m-%d %H:%M:%S")] Sftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					else
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set correct auth certitificate config to upload to remote server.Skip to upload backup to remote server." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					fi
+				fi
+			fi
+		fi
+	fi
+fi
+
 # All clear
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
