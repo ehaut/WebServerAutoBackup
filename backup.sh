@@ -1,6 +1,6 @@
 #!/bin/bash
 #Read the environment configuration
-
+. /etc/profile
 #-----------------------------			  
 # WebServerAutoBackup Script		  
 # Author:CHN-STUDENT <chn-student@outlook.com> && Noisky <i@ffis.me> && sunriseydy <i@mail.sunriseydy.top>
@@ -253,15 +253,22 @@ cfg_section_MYSQL_CONFIG
 if ! [ -x "$(command -v mysqldump)" ]; then
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the mysql server.Skip to backup mysql.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 else
-	if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql.Skip mysql backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	else
-		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		for db_name in ${MYSQL_DBS[@]}
-		do
-			mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
-		done
+	#判断是否备份所有数据库
+	if  [[ "${MYSQL_BACKUP_ALL}" = "yes" || "${MYSQL_BACKUP_ALL}" = "YES" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup all mysql databases." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} --all-databases > "${TEMP_DIR}/all_db.sql" 
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	else
+		if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql. Skip mysql backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		else
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			for db_name in ${MYSQL_DBS[@]}
+			do
+				mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
+			done
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		fi
 	fi
 fi
 # Start backup wwwroot
