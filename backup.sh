@@ -210,8 +210,8 @@ fi
 # Check if wwwroot folder exists
 cfg_section_WWWROOT_CONFIG
 if [[ "${WWWROOT_DIR}" = "" ]]; then 
-	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the wwwroot directory.Exit.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
-	exit 1
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Warning: Directory Backup is not set, skip.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	#exit 1
 fi
 # Check if temp folder exists
 cfg_section_TEMP_CONFIG
@@ -263,7 +263,7 @@ else
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
-			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: You must set your mysql config to backup mysql. Skip mysql backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Warning: Database backup is not set, skip." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		else
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			for db_name in ${MYSQL_DBS[@]}
