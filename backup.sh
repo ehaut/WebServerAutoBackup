@@ -173,13 +173,9 @@ function cfg_clear {
 
 # We do not need the cfg_update function,so i delete it.
 
-#Test harness
-if [ $# != 0 ]
-then
-   $@
-fi
-
 cfg_parser "${INI_FILE}"
+log_name="$(date +"%Y%m%d").backup.log"
+
 # Check if the save folder exists
 cfg_section_SAVE_CONFIG
 if  [[ "${SAVE_LOG_DIR}" != "" && "${SAVE_DIR}" != "" ]];then
@@ -190,11 +186,18 @@ if  [[ "${SAVE_LOG_DIR}" != "" && "${SAVE_DIR}" != "" ]];then
 		mkdir -p "${SAVE_LOG_DIR}" 
 	fi 
 else
-	echo "${CFAILURE}Error: You must set the save directory.${CEND}" 
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You must set the save directory.${CEND}"
 	exit 1
 fi
+
+# Log divider
+echo "------------------------------------------------------" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+# Check if there are parameters
+if [ ! $# -eq 0 ]; then
+	echo "[$(date +"%Y-%m-%d %H:%M:%S")] Use custom configuration." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+fi
+
 # Check if the log file exists
-log_name="$(date +"%Y%m%d").backup.log"
 if ! [ -e "${SAVE_LOG_DIR}/${log_name}" ]; then
 	touch "${SAVE_LOG_DIR}/${log_name}"
 	echo "[$(date +"%Y-%m-%d %H:%M:%S")] The log file does not exist,create it." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -256,7 +259,7 @@ else
 	#判断是否备份所有数据库
 	if  [[ "${MYSQL_BACKUP_ALL}" = "yes" || "${MYSQL_BACKUP_ALL}" = "YES" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup all mysql databases." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-		mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} --all-databases > "${TEMP_DIR}/all_db.sql" 
+		mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} --all-databases > "${TEMP_DIR}/all_db.sql"
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	else
 		if  [[ "${MYSQL_DBS}" = "" || "${MYSQL_USER}" = "" || "${MYSQL_PASSWD}" = "" || "${MYSQL_SERVER}" = "" || "${MYSQL_SERVER_PORT}" = "" ]];then
@@ -265,7 +268,7 @@ else
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start backup mysql." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			for db_name in ${MYSQL_DBS[@]}
 			do
-				mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql" 
+				mysqldump -u${MYSQL_USER} -h${MYSQL_SERVER} -P${MYSQL_SERVER_PORT} -p${MYSQL_PASSWD} ${db_name} > "${TEMP_DIR}/$db_name.sql"
 			done
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Mysql backup completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
@@ -284,9 +287,9 @@ cfg_section_COMPRESS_CONFIG
 ZIP_COMPRESS_PASSWD=${COMPRESS_PASSWD}
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start packing backup." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 if [ "${ZIP_COMPRESS_PASSWD}" = "" ];then
-    zip -q -r ${SAVE_DIR}/backup.$NOW.zip * 
+    zip -q -r ${SAVE_DIR}/backup.$NOW.zip *
 else
-    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip * 
+    zip -q -r -P ${ZIP_COMPRESS_PASSWD} ${SAVE_DIR}/backup.$NOW.zip *
 fi
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup package completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 # Start clean backup and logs files based your set
@@ -310,17 +313,17 @@ if [ "${DAY}" != "0" ];then
 		logs_list=`find ${SAVE_LOG_DIR} -mtime +${DAY} -name "*.log"`
 		for files_name in ${files_list}
 		do
-			# Create delete list 
-			if ! [[ "${ftp_delete_prefix}" = "" ]];then 
+			# Create delete list
+			if ! [[ "${ftp_delete_prefix}" = "" ]];then
 				echo "/${ftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/ftp_delete_bak.txt
 			fi
-			if ! [[ "${qiniu_delete_prefix}" = "" ]];then 																	 
+			if ! [[ "${qiniu_delete_prefix}" = "" ]];then
 				echo "${qiniu_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/qiniu_delete_bak.txt
 			fi
-			if ! [[ "${upx_delete_prefix}" = "" ]];then 	
+			if ! [[ "${upx_delete_prefix}" = "" ]];then
 				echo "/${upx_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/upai_delete_bak.txt
 			fi
-			if ! [[ "${sftp_delete_prefix}" = "" ]];then 	
+			if ! [[ "${sftp_delete_prefix}" = "" ]];then
 				echo "${sftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
 			fi
 		done
@@ -335,7 +338,7 @@ if [ $(getconf WORD_BIT) = '32' ] && [ $(getconf LONG_BIT) = '64' ] ; then
 else
     OS_TYPE="X86"
 fi
-# If you set auto upload to your qiniu bucket,then do. 
+# If you set auto upload to your qiniu bucket,then do.
 cfg_section_QSHELL_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if qiniu config exists
@@ -351,7 +354,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download qshell to upload qiniu.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 		# Check if qshell exists
-		if [ ! -f "${qshell_path}"  ];then 
+		if [ ! -f "${qshell_path}"  ];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find qshell.Now start to download." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			if [ ${OS_TYPE}="X64" ];then
 				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell64" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x64
@@ -359,14 +362,14 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/qshell86" https://dn-devtools.qbox.me/2.1.7/qshell-linux-x86
 			fi
 		fi
-		if [ -f "${qshell_path}"  ];then 
+		if [ -f "${qshell_path}"  ];then
 			# Give its permission
 			if ! [ -x ${qshell_path} ];then
 				chmod a+x ${qshell_path}
 			fi
 			# Set qshell account
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Set your qiniu account." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			${qshell_path} account ${ACCESS_Key} ${SECRET_Key}  
+			${qshell_path} account ${ACCESS_Key} ${SECRET_Key}
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start qshell upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			echo "--------------------------This is qshell out put:--------------------------"
@@ -374,8 +377,8 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			${qshell_path} rput ${BUCKET} "${key_prefix}/backup.$NOW.zip" ${backup_path}
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] qshell upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			# If you set auto delete from your qiniu bucket,then do. 
-			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" ];then    
+			# If you set auto delete from your qiniu bucket,then do.
+			if [ -f "${TEMP_DIR}/qiniu_delete_bak.txt" ];then
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up qiniu files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					echo "---------------------------------------------------------------------------"
@@ -389,7 +392,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		fi
 	fi
 fi
-# If you set auto upload to your upx bucket,then do. 
+# If you set auto upload to your upx bucket,then do.
 cfg_section_UPX_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	# Check if upx config exists
@@ -405,7 +408,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the wget.Can not download upx to upload upaiyun.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		fi
 		# Check if qshell exists
-		if [ ! -f "${upx_path}" ];then 
+		if [ ! -f "${upx_path}" ];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find upx.Now start to download." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			if [ ${OS_TYPE}="X64" ];then
 				wget -t 3 -T 30 --no-check-certificate -O "${basepath}/upx64" http://collection.b0.upaiyun.com/softwares/upx/upx-linux-amd64-v0.2.3
@@ -414,7 +417,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			fi
 		fi
 		# Check if upx exists
-		if [ -f "${upx_path}" ];then 
+		if [ -f "${upx_path}" ];then
 			# Give its permission
 			if ! [ -x ${upx_path} ];then
 				chmod a+x ${upx_path}
@@ -430,11 +433,11 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upx upload." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 			echo "---------------------------------------------------------------------------"
 			${upx_path} cd /${UPX_DIR}
-			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.zip" 
+			${upx_path} put ${backup_path} "/${UPX_DIR}/backup.$NOW.zip"
 			echo "---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] upaiyun upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-			# If you set auto delete from your upaiyun bucket,then do. 
-			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
+			# If you set auto delete from your upaiyun bucket,then do.
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					upx_delete_bak_list="$(cat ${TEMP_DIR}/upai_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start cleaning up upaiyun files based on the date you set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -491,6 +494,12 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			fi
 		fi
 	done
+	# Check out whether coscmd exists again
+	if ! [ -x "${coscmd_path}" ]; then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] install cosmd failed! Please install cosmd manually." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		rm -rf ${TEMP_DIR}/*
+		exit 1
+	fi
 	#coscmd_path=`command -v coscmd`
 	# Check out whether coscmd has been configed.
 	coscmd_config_file="/root/.cos.conf"
@@ -526,7 +535,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 	else
 		#Check out whether the bpcs_uploader.php exists
 		bpcs_uploader_path="${bpcs_uploader_dir}/bpcs_uploader.php"
-		if ! [ -f "${bpcs_uploader_path}"  ]; then 
+		if ! [ -f "${bpcs_uploader_path}"  ]; then
 			echo  "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload your backup file to BaiDuYun, you must hava the bpcs_uploader.php .Skip upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 		else
 			# Check if php command exists
@@ -549,11 +558,11 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Quick initialize the bpcs_uploader." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 						${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} quickinit
 					done
-					# Start upload to BaiDuYun 
+					# Start upload to BaiDuYun
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start upload to BaiDuYun." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 					${php_path} -d disable_functions -d safe_mode=Off -f ${bpcs_uploader_path} upload ${SAVE_DIR}/backup.$NOW.zip ${BDY_DIR}/backup.$NOW.zip
 					echo "[$(date +"%Y-%m-%d %H:%M:%S")] upload to BaiDuYun finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
-					# If you set auto delete from BaiDuYun,then do. 
+					# If you set auto delete from BaiDuYun,then do.
 					if [[ "${files_list}" != "" && "${AUTO_DELETE}" = "yes" ]];then
 						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start delete backup files based on your set." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 						for files_name in ${files_list}
@@ -580,7 +589,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		else
 			ftp_delete_bak_list=""
 			# Make delete list for ftp
-			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then  
+			if [ -f "${TEMP_DIR}/ftp_delete_bak.txt" ];then
 				if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 					ftp_delete_bak_list="$(cat ${TEMP_DIR}/ftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 				fi
@@ -592,13 +601,13 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 			ftp -n << EOF
 			open ${FTP_ADDR} ${FTP_PORT}
 			user ${FTP_UESR} ${FTP_PASSWD}
-			binary  
-			mkdir "${FTP_DIR}" 
-			prompt  
+			binary
+			mkdir "${FTP_DIR}"
+			prompt
 			put ${backup_path} "/${FTP_DIR}/backup.$NOW.zip"
-			mdelete ${ftp_delete_bak_list}		 
-			close  
-			bye  
+			mdelete ${ftp_delete_bak_list}
+			close
+			bye
 EOF
 			echo -e "\n---------------------------------------------------------------------------"
 			echo "[$(date +"%Y-%m-%d %H:%M:%S")] Ftp upload completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
@@ -628,7 +637,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 					else
 						sftp_delete_bak_list=""
 							# Make delete list for sftp
-							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list
 								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 								fi
@@ -647,7 +656,7 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 								put ${backup_path}
 								exit
 SFTPPASSWORD0
-						else	
+						else
 						# if remote directory exists,we do not need to create it,then upload backup file and delete old file
 						sshpass -p ${REMOTE_PASSWD} sftp -o StrictHostKeyChecking=no -P ${REMOTE_PORT} -b - ${REMOTE_USER}@${REMOTE_IP} <<SFTPPASSWORD1
 							cd ${REMOTE_DIR}
@@ -672,12 +681,12 @@ SFTPPASSWORD1
 				else
 					cert_path=${REMOTE_CERT}
 					# Check if auth_certitficate exists
-					if [ -f "${cert_path}" ];then 
+					if [ -f "${cert_path}" ];then
 						# set its permission
 						chmod 600 ${cert_path}
 						sftp_delete_bak_list=""
 							# Make delete list for sftp
-							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list 
+							if [ -f "${TEMP_DIR}/sftp_delete_bak.txt" ];then  # using the ftp delete list
 								if  [[ "${AUTO_DELETE}" = "yes" || "${AUTO_DELETE}" = "YES" ]];then
 									sftp_delete_bak_list="$(cat ${TEMP_DIR}/sftp_delete_bak.txt | sed ':label;N;s/\n/ /;b label')"
 								fi
@@ -720,11 +729,13 @@ SFTPCERT1
 	fi
 fi
 
-# All clear
+# clear temp files
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start clear temp files." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 rm -rf ${TEMP_DIR}/*
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Clean temp files completed." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+
 # Finished
 echo "[$(date +"%Y-%m-%d %H:%M:%S")] Backup completed. Thank you for your use." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 printf "Backup successful.
 "
+exit 0
