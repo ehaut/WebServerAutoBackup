@@ -58,7 +58,8 @@ This is a script that automatically backs up your site and database to local or 
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
 	chmod a+x backup.sh
-	./backup.sh
+	./backup.sh //使用默认配置文件运行
+	./backup.sh config-customize.ini //使用指定配置文件运行
 
 **注意：请勿将临时目录设置成根`/`等重要目录，不然可能会造成系统及重要数据丢失的情况！！！这些目录也尽量不要设置到移动硬盘上，防止移动断电等意外情况。**
 
