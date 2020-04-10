@@ -19,6 +19,9 @@ This is a script that automatically backs up your site and database to local or 
  - 自动将备份文件上传到远程服务器并和本地同步删除（通过`SFTP`命令）
 
 ## 将来会实现的功能：
+ - 自动下载最新版云上传工具，并且可以选择自动更新（和云工具作者提意见中）
+ - 脚本选择自动更新功能
+ - 其他细节优化
  - 兼容更多的linux发行版
  - 添加更多云存储平台
  - 改进备份过程等
@@ -55,7 +58,8 @@ This is a script that automatically backs up your site and database to local or 
 	cd WebServerAutoBackup
 	vi config.ini //修改配置文件内的网站、数据库等参数
 	chmod a+x backup.sh
-	./backup.sh
+	./backup.sh //使用默认配置文件运行
+	./backup.sh config-customize.ini //使用指定配置文件运行
 
 **注意：请勿将临时目录设置成根`/`等重要目录，不然可能会造成系统及重要数据丢失的情况！！！这些目录也尽量不要设置到移动硬盘上，防止移动断电等意外情况。**
 
@@ -72,6 +76,7 @@ This is a script that automatically backs up your site and database to local or 
 - 使用百度云上传需要安装php和curl
 - 注意在第一次使用bpcs_uploader工具上传到百度云时需要进行工具的快速初始化，请根据脚本里的提示进行操作
 - 若使用`coscmd`,需要`python`且版本为2.7
+- 若使用SFTP密码上传功能，由于使用了`sshpass`命令，该命令会记住第一次正确的密码，后期为了安全可以将该密码删除
 
 bpcs_uploader工具使用说明：[bpcs_uploader/README.md](https://github.com/CHN-STUDENT/WebServerAutoBackup/blob/master/bpcs_uploader/README.md "bpcs_uploader/README.md")
 
