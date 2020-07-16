@@ -14,7 +14,7 @@ clear
 printf "
 ######################################################
 #            WebServerAutoBackup Script              #
-#                2018.9  V0.1.0 Beta                 #
+#                2020.7  V0.1.1 Beta                 #
 #                                                    #
 # Please add your server information in this script  #
 #           configuration and run as root            #
@@ -277,7 +277,7 @@ fi
 # Start backup wwwroot
 for www_dir in ${WWWROOT_DIR[@]}
 do
-	cp -r ${www_dir} .
+	cp -r ${www_dir} ${TEMP_DIR}
 done
 # set backup path and log path
 backup_path="${SAVE_DIR}/backup.$NOW.zip"
@@ -299,6 +299,8 @@ cfg_section_FTP_CONFIG
 ftp_delete_prefix="${FTP_DIR}"
 cfg_section_UPX_CONFIG
 upx_delete_prefix="${UPX_DIR}"
+cfg_section_OSS_CONFIG
+oss_delete_prefix="${OSS_UPLOAD_DIR}"
 cfg_section_SFTP_CONFIG
 sftp_delete_prefix=${REMOTE_DIR}
 cfg_section_DAY_CONFIG
@@ -325,6 +327,9 @@ if [ "${DAY}" != "0" ];then
 			fi
 			if ! [[ "${sftp_delete_prefix}" = "" ]];then
 				echo "${sftp_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/sftp_delete_bak.txt
+			fi
+			if ! [[ "${oss_delete_prefix}" = "" ]];then
+				echo "${oss_delete_prefix}/$(basename ${files_name})" >> ${TEMP_DIR}/oss_delete_bak.txt
 			fi
 		done
 	# Start clean
@@ -525,6 +530,59 @@ if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
 		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Delete backup files from COS finished." | tee -a "${SAVE_LOG_DIR}/${log_name}"
 	fi
 fi
+
+# If you set auto upload to your oss,then do that below.
+cfg_section_OSS_CONFIG
+if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
+	# Check if oss config exists
+	if  [[ "${ACCESS_KEY_ID}" = "" || "${ACCESS_KEY_SECRET}" = "" || "${BUCKET}" = "" || "${OSS_UPLOAD_DIR}" = "" ]];then
+		echo "[$(date +"%Y-%m-%d %H:%M:%S")] Error: To upload to oss,You must set your oss config.Skip to upload to oss." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+	else
+		if [ ${OS_TYPE}="X64" ];then
+			ossutil_path="${basepath}/ossutil64"
+		else
+			ossutil_path="${basepath}/ossutil86"
+		fi
+		if [[ ( ! -x "$(command -v wget)" ) && ( ! -f "${ossutil_path}" ) ]];then
+			echo "[$(date +"%Y-%m-%d %H:%M:%S")] ${CFAILURE}Error: You may not install the ossutil.Can not download ossutil to upload oss.${CEND}" | tee -a "${SAVE_LOG_DIR}/${log_name}"
+		else
+			# Check if ossutil exists
+			if [ ! -f "${ossutil_path}"  ];then
+				echo "[$(date +"%Y-%m-%d %H:%M:%S")] Can not find ossutil.Now start to download." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+				if [ ${OS_TYPE}="X64" ];then
+					wget -t 3 -T 30 --no-check-certificate -O "${basepath}/ossutil64" http://gosspublic.alicdn.com/ossutil/1.6.17/ossutil32
+				else
+					wget -t 3 -T 30 --no-check-certificate -O "${basepath}/ossutil86" http://gosspublic.alicdn.com/ossutil/1.6.17/ossutil64
+				fi
+			fi
+			# Check if upx exists
+			if [ -f "${ossutil_path}" ];then
+				# Give its permission
+				if ! [ -x ${ossutil_path} ];then
+					chmod a+x ${ossutil_path}
+				else 
+					# check osutil config
+					while ! [ -f "~/.ossutilconfig" ]
+					do	
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Start config oss." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+						${ossutil_path} config -e ${ENDPOINT} -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET}
+						echo "[$(date +"%Y-%m-%d %H:%M:%S")] Config oss successful." | tee -a "${SAVE_LOG_DIR}/${log_name}"
+					done 
+					#TODO: Check bucket is exists
+
+					#TODO: Check folder is exists
+
+					#TODO: Upload backup file and logs
+
+					#TODO: Delete all old files
+
+				fi
+			fi
+		fi
+	fi
+fi
+
+
 # If you set auto upload to your BaiDuYun,then do that below.
 cfg_section_BPCS_UPLOADER_CONFIG
 if  [[ "${AUTO_UPLOAD}" = "yes" || "${AUTO_UPLOAD}" = "YES" ]];then
